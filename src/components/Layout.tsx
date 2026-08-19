@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu } from 'lucide-react'
 import { api } from '../api'
+import { useEnv } from '../context/EnvContext'
 
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -16,6 +17,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const merchant = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
   const [open, setOpen] = useState(false)
+  const { mode, setMode, isSandbox } = useEnv()
 
   const sidebar = (
     <aside className="w-60 bg-[#0d1117] flex flex-col h-full">
@@ -27,6 +29,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <p className="text-sm font-bold text-white leading-tight">Delivio Pay</p>
           <p className="text-[11px] text-slate-500 font-medium">Merchant Portal</p>
         </div>
+      </div>
+
+      {/* Environment toggle */}
+      <div className="px-3 py-3 border-b border-white/[0.06]">
+        <div className="flex items-center bg-white/[0.06] rounded-lg p-0.5 gap-0.5">
+          <button
+            onClick={() => setMode('live')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              mode === 'live'
+                ? 'bg-emerald-500 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${mode === 'live' ? 'bg-white' : 'bg-slate-500'}`} />
+            Live
+          </button>
+          <button
+            onClick={() => setMode('sandbox')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              mode === 'sandbox'
+                ? 'bg-violet-500 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <FlaskConical size={11} />
+            Sandbox
+          </button>
+        </div>
+        {isSandbox && (
+          <p className="text-[10px] text-violet-400 text-center mt-1.5">Test mode — no real money</p>
+        )}
       </div>
 
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">

@@ -29,13 +29,14 @@ export const api = {
     return data
   },
   me: () => req<any>('GET', '/me'),
-  stats: () => req<any>('GET', '/stats'),
-  payments: (params?: { limit?: number; offset?: number; status?: string; search?: string }) => {
+  stats: (envType?: 'live' | 'sandbox') => req<any>('GET', `/stats${envType ? `?envType=${envType}` : ''}`),
+  payments: (params?: { limit?: number; offset?: number; status?: string; search?: string; envType?: 'live' | 'sandbox' }) => {
     const qs = new URLSearchParams()
     if (params?.limit) qs.set('limit', String(params.limit))
     if (params?.offset) qs.set('offset', String(params.offset))
     if (params?.status && params.status !== 'ALL') qs.set('status', params.status)
     if (params?.search) qs.set('search', params.search)
+    if (params?.envType) qs.set('envType', params.envType)
     const q = qs.toString()
     return req<any>('GET', `/payments${q ? `?${q}` : ''}`)
   },

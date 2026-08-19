@@ -6,6 +6,7 @@ import { APIKeysPage } from './pages/APIKeysPage'
 import { WebhooksPage } from './pages/WebhooksPage'
 import { DocsPage } from './pages/DocsPage'
 import { PlaygroundPage } from './pages/PlaygroundPage'
+import { EnvProvider } from './context/EnvContext'
 import { api } from './api'
 
 function Guard({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,7 @@ function Guard({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
+    <EnvProvider>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -26,5 +28,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
+    </EnvProvider>
   )
 }

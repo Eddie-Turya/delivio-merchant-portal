@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { Search, RefreshCw } from 'lucide-react'
+import { useEnv } from '../context/EnvContext'
+import { Search, RefreshCw, FlaskConical } from 'lucide-react'
 
 const STATUSES = ['ALL', 'COMPLETED', 'PENDING', 'FAILED', 'REFUNDED']
 
@@ -27,12 +28,13 @@ export function PaymentsPage() {
   const [status, setStatus] = useState('ALL')
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const { mode, isSandbox } = useEnv()
   const PAGE = 20
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.payments({ limit: PAGE, offset: page * PAGE, status, search })
+      const res = await api.payments({ limit: PAGE, offset: page * PAGE, status, search, envType: mode })
       setData(res.data)
       setTotal(res.total)
     } catch (err) {
@@ -40,7 +42,12 @@ export function PaymentsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, status, search])
+  }, [page, status, search, mode])
+
+  useEffect(() => {
+    setPage(0)
+    setData([])
+  }, [mode])
 
   useEffect(() => { load() }, [load])
 
@@ -50,7 +57,14 @@ export function PaymentsPage() {
     <Layout>
       <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-base font-bold text-gray-900">Transactions</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-bold text-gray-900">Transactions</h1>
+            {isSandbox && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200">
+                <FlaskConical size={9} /> SANDBOX
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-400">{total.toLocaleString()} total payments</p>
         </div>
         <button onClick={load} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition">

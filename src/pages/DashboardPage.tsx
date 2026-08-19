@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
+import { useEnv } from '../context/EnvContext'
 import { TrendingUp, CreditCard, DollarSign, AlertTriangle, RotateCcw, Activity, FlaskConical, ArrowRight } from 'lucide-react'
 
 function formatTZS(n: number) {
@@ -18,10 +19,13 @@ export function DashboardPage() {
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const merchant = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
+  const { mode, isSandbox } = useEnv()
 
   useEffect(() => {
-    api.stats().then(setStats).catch(console.error).finally(() => setLoading(false))
-  }, [])
+    setLoading(true)
+    setStats(null)
+    api.stats(mode).then(setStats).catch(console.error).finally(() => setLoading(false))
+  }, [mode])
 
   const cards = stats ? [
     { label: 'Total Volume', value: formatTZS(stats.totalVolume), icon: DollarSign, border: 'border-l-emerald-500', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', sub: 'Completed payments' },
@@ -34,13 +38,22 @@ export function DashboardPage() {
   return (
     <Layout>
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-          <Activity size={16} className="text-white" />
+      <div className={`border-b px-6 py-4 flex items-center gap-3 ${isSandbox ? 'bg-violet-950 border-violet-800/60' : 'bg-white border-gray-100'}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSandbox ? 'bg-violet-500/20' : 'bg-gradient-to-br from-emerald-500 to-teal-600'}`}>
+          {isSandbox ? <FlaskConical size={16} className="text-violet-300" /> : <Activity size={16} className="text-white" />}
         </div>
-        <div>
-          <h1 className="text-base font-bold text-gray-900">Overview</h1>
-          <p className="text-xs text-gray-400">{merchant.name || 'Your merchant account'}</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className={`text-base font-bold ${isSandbox ? 'text-white' : 'text-gray-900'}`}>
+              {isSandbox ? 'Sandbox' : 'Overview'}
+            </h1>
+            {isSandbox && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                TEST MODE
+              </span>
+            )}
+          </div>
+          <p className={`text-xs ${isSandbox ? 'text-violet-400' : 'text-gray-400'}`}>{merchant.name || 'Your merchant account'}</p>
         </div>
       </div>
 
@@ -76,26 +89,42 @@ export function DashboardPage() {
               ))}
         </div>
 
-        {/* Sandbox callout */}
-        <div className="rounded-xl border border-violet-200/70 bg-gradient-to-r from-violet-50 to-purple-50 p-5">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-              <FlaskConical size={20} className="text-violet-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-violet-900 mb-1">Sandbox environment available</p>
-              <p className="text-xs text-violet-700 leading-relaxed mb-3">
-                Test your integration without moving real money. Use your <code className="font-mono bg-violet-100 px-1 rounded">dpay_test_</code> key — payments complete instantly, webhooks fire, no USSD push is sent.
-              </p>
-              <a
-                href="/api-keys"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900 transition-colors"
-              >
-                View sandbox API key <ArrowRight size={12} />
-              </a>
+        {/* Env callout */}
+        {isSandbox ? (
+          <div className="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+                <FlaskConical size={20} className="text-violet-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-violet-900 mb-1">You're viewing sandbox data</p>
+                <p className="text-xs text-violet-700 leading-relaxed mb-3">
+                  All stats and transactions below are from your sandbox environment. Payments complete instantly, webhooks fire, and no USSD push is sent to real customers.
+                </p>
+                <a href="/playground" className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900 transition-colors">
+                  Open API Playground <ArrowRight size={12} />
+                </a>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-xl border border-emerald-200/70 bg-gradient-to-r from-emerald-50 to-teal-50 p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <Activity size={20} className="text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-emerald-900 mb-1">Live environment — real payments</p>
+                <p className="text-xs text-emerald-700 leading-relaxed mb-3">
+                  Switch to <strong>Sandbox</strong> in the sidebar to test your integration without moving real money.
+                </p>
+                <a href="/api-keys" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors">
+                  Manage API keys <ArrowRight size={12} />
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick links */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
