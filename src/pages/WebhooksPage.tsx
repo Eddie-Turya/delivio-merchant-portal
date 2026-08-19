@@ -1,0 +1,202 @@
+import { useState, useEffect } from 'react'
+import { Layout } from '../components/Layout'
+import { api } from '../api'
+import { Webhook, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, X, ShieldCheck } from 'lucide-react'
+
+const ALL_EVENTS = [
+  'payment.completed',
+  'payment.failed',
+  'payment.pending',
+  'refund.created',
+  'refund.completed',
+]
+
+export function WebhooksPage() {
+  const [hooks, setHooks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [url, setUrl] = useState('')
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(['payment.completed', 'payment.failed'])
+  const [creating, setCreating] = useState(false)
+  const [newSecret, setNewSecret] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const load = () => {
+    setLoading(true)
+    api.webhooks().then(res => setHooks(res.data)).catch(console.error).finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const toggle = (event: string) => {
+    setSelectedEvents(prev => prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event])
+  }
+
+  const create = async () => {
+    if (!url || selectedEvents.length === 0) return
+    setCreating(true)
+    try {
+      const res = await api.createWebhook(url, selectedEvents)
+      setNewSecret(res.secret)
+      setShowForm(false)
+      setUrl('')
+      setSelectedEvents(['payment.completed', 'payment.failed'])
+      load()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const toggleEnabled = async (id: string, enabled: boolean) => {
+    await api.updateWebhook(id, { enabled: !enabled })
+    setHooks(prev => prev.map(h => h.id === id ? { ...h, enabled: !enabled } : h))
+  }
+
+  const remove = async (id: string) => {
+    if (!confirm('Delete this webhook?')) return
+    await api.deleteWebhook(id)
+    setHooks(prev => prev.filter(h => h.id !== id))
+  }
+
+  const copy = async (text: string) => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Layout>
+      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-bold text-gray-900">Webhooks</h1>
+          <p className="text-xs text-gray-400">Receive event notifications at your endpoint</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+        >
+          {showForm ? <X size={15} /> : <Plus size={15} />}
+          {showForm ? 'Cancel' : 'Add Webhook'}
+        </button>
+      </div>
+
+      <div className="p-6 space-y-5">
+        {/* New secret reveal */}
+        {newSecret && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+            <div className="flex items-start gap-3">
+              <ShieldCheck size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-800 mb-1">Webhook secret — copy it now</p>
+                <p className="text-xs text-amber-700 mb-3">Use this to verify webhook signatures. It won't be shown again.</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white border border-amber-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-800 break-all">{newSecret}</code>
+                  <button onClick={() => copy(newSecret)} className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex-shrink-0">
+                    {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create form */}
+        {showForm && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <h3 className="text-sm font-bold text-gray-900 mb-4">New Webhook Endpoint</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Endpoint URL</label>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  placeholder="https://yourdomain.com/webhooks/deliviopay"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Events to listen for</label>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_EVENTS.map(event => (
+                    <button
+                      key={event}
+                      type="button"
+                      onClick={() => toggle(event)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium border transition ${
+                        selectedEvents.includes(event)
+                          ? 'bg-emerald-500 text-white border-emerald-500'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {event}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={create}
+                disabled={creating || !url || selectedEvents.length === 0}
+                className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition"
+              >
+                {creating ? 'Creating…' : 'Create Webhook'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Webhook list */}
+        {loading ? (
+          Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 p-6 animate-pulse">
+              <div className="h-4 bg-gray-100 rounded w-64 mb-3" />
+              <div className="h-3 bg-gray-100 rounded w-48" />
+            </div>
+          ))
+        ) : hooks.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-14 text-center">
+            <Webhook size={32} className="text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 font-medium">No webhooks yet</p>
+            <p className="text-xs text-gray-400 mt-1">Add an endpoint to receive payment event notifications</p>
+          </div>
+        ) : (
+          hooks.map(hook => (
+            <div key={hook.id} className={`bg-white rounded-xl border shadow-sm p-5 ${hook.enabled ? 'border-gray-100' : 'border-gray-100 opacity-70'}`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hook.enabled ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                    <code className="text-sm font-mono text-gray-800 truncate">{hook.url}</code>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {hook.events.map((e: string) => (
+                      <span key={e} className="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-mono text-gray-600">{e}</span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">Added {new Date(hook.created_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => toggleEnabled(hook.id, hook.enabled)}
+                    className="text-gray-400 hover:text-gray-700 transition"
+                    title={hook.enabled ? 'Disable' : 'Enable'}
+                  >
+                    {hook.enabled ? <ToggleRight size={22} className="text-emerald-500" /> : <ToggleLeft size={22} />}
+                  </button>
+                  <button
+                    onClick={() => remove(hook.id)}
+                    className="text-gray-400 hover:text-red-500 transition p-1"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </Layout>
+  )
+}
