@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { TrendingUp, CreditCard, DollarSign, AlertTriangle, RotateCcw, Activity } from 'lucide-react'
+import { TrendingUp, CreditCard, DollarSign, AlertTriangle, RotateCcw, Activity, FlaskConical, ArrowRight } from 'lucide-react'
 
 function formatTZS(n: number) {
   if (n >= 1_000_000_000) return `TZS ${(n / 1_000_000_000).toFixed(2)}B`
@@ -74,6 +74,27 @@ export function DashboardPage() {
                   <p className="text-xs text-gray-400">{sub}</p>
                 </div>
               ))}
+        </div>
+
+        {/* Sandbox callout */}
+        <div className="rounded-xl border border-violet-200/70 bg-gradient-to-r from-violet-50 to-purple-50 p-5">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+              <FlaskConical size={20} className="text-violet-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-violet-900 mb-1">Sandbox environment available</p>
+              <p className="text-xs text-violet-700 leading-relaxed mb-3">
+                Test your integration without moving real money. Use your <code className="font-mono bg-violet-100 px-1 rounded">dpay_test_</code> key — payments complete instantly, webhooks fire, no USSD push is sent.
+              </p>
+              <a
+                href="/api-keys"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900 transition-colors"
+              >
+                View sandbox API key <ArrowRight size={12} />
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Quick links */}

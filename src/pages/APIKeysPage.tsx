@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { Key, Copy, Check, RefreshCw, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Key, Copy, Check, RefreshCw, Eye, EyeOff, ShieldCheck, Zap, FlaskConical } from 'lucide-react'
 
 export function APIKeysPage() {
   const [envs, setEnvs] = useState<any[]>([])
@@ -17,6 +17,9 @@ export function APIKeysPage() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
+
+  const isSandbox = (env: any) =>
+    env.name === 'sandbox' || env.api_key_prefix?.startsWith('dpay_test_')
 
   const rotate = async (envId: string) => {
     if (!confirm('Rotating the key will immediately invalidate the current key. Continue?')) return
@@ -39,14 +42,17 @@ export function APIKeysPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const liveEnvs = envs.filter(e => !isSandbox(e))
+  const sandboxEnvs = envs.filter(e => isSandbox(e))
+
   return (
     <Layout>
       <div className="bg-white border-b border-gray-100 px-6 py-4">
         <h1 className="text-base font-bold text-gray-900">API Keys</h1>
-        <p className="text-xs text-gray-400">Manage your API credentials for each environment</p>
+        <p className="text-xs text-gray-400">Manage credentials for live and sandbox environments</p>
       </div>
 
-      <div className="p-6 space-y-5">
+      <div className="p-6 space-y-8">
         {/* New key reveal */}
         {newKey && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
@@ -62,7 +68,7 @@ export function APIKeysPage() {
                   <button onClick={() => setShowKey(!showKey)} className="text-amber-600 hover:text-amber-800 p-1.5 transition">
                     {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-                  <button onClick={() => copy(newKey.key)} className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition">
+                  <button onClick={() => copy(newKey.key)} className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex-shrink-0">
                     {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
                   </button>
                 </div>
@@ -71,12 +77,6 @@ export function APIKeysPage() {
           </div>
         )}
 
-        {/* Info banner */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
-          Use your API key in the <code className="font-mono bg-blue-100 px-1 rounded">Authorization: Bearer &lt;key&gt;</code> header with every API request.
-        </div>
-
-        {/* Environment cards */}
         {loading ? (
           Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-gray-100 p-6 animate-pulse">
@@ -84,58 +84,123 @@ export function APIKeysPage() {
               <div className="h-3 bg-gray-100 rounded w-48" />
             </div>
           ))
-        ) : envs.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <Key size={32} className="text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">No environments found</p>
-          </div>
         ) : (
-          envs.map(env => (
-            <div key={env.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-bold text-gray-900 capitalize">{env.name}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      env.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {env.enabled ? 'Active' : 'Inactive'}
-                    </span>
-                    {env.name === 'production' && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-100 text-orange-600">Live</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400">Environment ID: <code className="font-mono">{env.id}</code></p>
-                </div>
-                <button
-                  onClick={() => rotate(env.id)}
-                  disabled={rotating === env.id}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition disabled:opacity-50"
-                >
-                  <RefreshCw size={14} className={rotating === env.id ? 'animate-spin' : ''} />
-                  Rotate Key
-                </button>
+          <>
+            {/* Live section */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Zap size={14} className="text-emerald-500" />
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Live</h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Production</span>
               </div>
-
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Current API Key Prefix</p>
-                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
-                  <Key size={14} className="text-gray-400 flex-shrink-0" />
-                  <code className="text-sm font-mono text-gray-700 flex-1">
-                    {env.api_key_prefix}{'•'.repeat(32)}
-                  </code>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">Full key is hidden for security. Rotate to generate a new one.</p>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-400 flex gap-4">
-                <span>Created: {new Date(env.created_at).toLocaleDateString()}</span>
-                <span>Updated: {new Date(env.updated_at).toLocaleDateString()}</span>
-              </div>
+              <p className="text-xs text-gray-500 mb-4">Use your live key for real payments. Real money is collected from customers.</p>
+              {liveEnvs.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">No live environment found</div>
+              ) : liveEnvs.map(env => (
+                <EnvCard key={env.id} env={env} rotating={rotating} newKeyEnvId={newKey?.envId ?? null} onRotate={rotate} />
+              ))}
             </div>
-          ))
+
+            {/* Sandbox section */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <FlaskConical size={14} className="text-violet-500" />
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Sandbox</h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700">Test Mode</span>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                Use your sandbox key to test your integration. Payments are <strong>auto-completed instantly</strong> — no real money, no USSD push.
+              </p>
+
+              {/* Sandbox info box */}
+              <div className="mb-4 rounded-xl border border-violet-200/60 bg-violet-50/50 p-4 text-sm">
+                <p className="font-semibold text-violet-800 mb-2">How sandbox works</p>
+                <ul className="space-y-1.5 text-xs text-violet-700">
+                  <li className="flex items-start gap-2"><Check size={12} className="mt-0.5 flex-shrink-0 text-violet-500" /> Every payment immediately transitions to <code className="font-mono bg-violet-100 px-1 rounded">COMPLETED</code></li>
+                  <li className="flex items-start gap-2"><Check size={12} className="mt-0.5 flex-shrink-0 text-violet-500" /> Your webhook receives a <code className="font-mono bg-violet-100 px-1 rounded">payment.completed</code> event</li>
+                  <li className="flex items-start gap-2"><Check size={12} className="mt-0.5 flex-shrink-0 text-violet-500" /> No USSD push is sent to any phone number</li>
+                  <li className="flex items-start gap-2"><Check size={12} className="mt-0.5 flex-shrink-0 text-violet-500" /> Sandbox data is separate from your live transactions</li>
+                </ul>
+              </div>
+
+              {sandboxEnvs.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">No sandbox environment found</div>
+              ) : sandboxEnvs.map(env => (
+                <EnvCard key={env.id} env={env} rotating={rotating} newKeyEnvId={newKey?.envId ?? null} onRotate={rotate} sandbox />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </Layout>
+  )
+}
+
+function EnvCard({
+  env, rotating, newKeyEnvId, onRotate, sandbox = false
+}: {
+  env: any
+  rotating: string | null
+  newKeyEnvId: string | null
+  onRotate: (id: string) => void
+  sandbox?: boolean
+}) {
+  const accent = sandbox
+    ? 'border-violet-200/60 bg-violet-50/20'
+    : 'border-gray-100'
+
+  return (
+    <div className={`rounded-xl border shadow-sm p-6 bg-white ${accent}`}>
+      <div className="flex items-start justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+            sandbox ? 'bg-violet-100' : 'bg-emerald-100'
+          }`}>
+            {sandbox
+              ? <FlaskConical size={15} className="text-violet-600" />
+              : <Zap size={15} className="text-emerald-600" />
+            }
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900 capitalize">{env.name}</p>
+            <p className="text-[11px] text-gray-400 font-mono">ID: {env.id.slice(0, 8)}…</p>
+          </div>
+        </div>
+        <button
+          onClick={() => onRotate(env.id)}
+          disabled={rotating === env.id}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition disabled:opacity-50 ${
+            sandbox
+              ? 'border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300'
+              : 'border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+          }`}
+        >
+          <RefreshCw size={14} className={rotating === env.id ? 'animate-spin' : ''} />
+          Rotate Key
+        </button>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Current Key Prefix</p>
+        <div className={`flex items-center gap-3 rounded-lg px-4 py-3 border ${
+          sandbox ? 'bg-violet-50/50 border-violet-100' : 'bg-gray-50 border-gray-100'
+        }`}>
+          <Key size={14} className={sandbox ? 'text-violet-400' : 'text-gray-400'} />
+          <code className="text-sm font-mono text-gray-700 flex-1">
+            {env.api_key_prefix}{'•'.repeat(28)}
+          </code>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">Full key is hidden. Click "Rotate Key" to generate and reveal a new one.</p>
+      </div>
+
+      {newKeyEnvId === env.id && (
+        <div className={`mt-3 pt-3 border-t text-xs flex gap-1.5 items-center font-medium ${
+          sandbox ? 'border-violet-100 text-violet-600' : 'border-gray-100 text-emerald-600'
+        }`}>
+          <Check size={13} />
+          New key generated — copy it from the banner above
+        </div>
+      )}
+    </div>
   )
 }
