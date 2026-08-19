@@ -18,8 +18,7 @@ export function APIKeysPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const isSandbox = (env: any) =>
-    env.name === 'sandbox' || env.api_key_prefix?.startsWith('dpay_test_')
+  const isSandbox = (env: any) => env.name === 'sandbox'
 
   const rotate = async (envId: string) => {
     if (!confirm('Rotating the key will immediately invalidate the current key. Continue?')) return
