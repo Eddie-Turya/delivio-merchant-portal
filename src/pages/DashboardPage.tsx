@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
@@ -101,9 +102,9 @@ export function DashboardPage() {
                 <p className="text-xs text-violet-700 leading-relaxed mb-3">
                   All stats and transactions below are from your sandbox environment. Payments complete instantly, webhooks fire, and no USSD push is sent to real customers.
                 </p>
-                <a href="/playground" className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900 transition-colors">
+                <Link to="/playground" className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900 transition-colors">
                   Open API Playground <ArrowRight size={12} />
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -118,9 +119,9 @@ export function DashboardPage() {
                 <p className="text-xs text-emerald-700 leading-relaxed mb-3">
                   Switch to <strong>Sandbox</strong> in the sidebar to test your integration without moving real money.
                 </p>
-                <a href="/api-keys" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors">
+                <Link to="/api-keys" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors">
                   Manage API keys <ArrowRight size={12} />
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -133,15 +134,15 @@ export function DashboardPage() {
             { title: 'API Keys', desc: 'Manage your API credentials', href: '/api-keys', color: 'from-violet-500 to-violet-600' },
             { title: 'Webhooks', desc: 'Configure event notifications', href: '/webhooks', color: 'from-emerald-500 to-teal-600' },
           ].map(card => (
-            <a
+            <Link
               key={card.title}
-              href={card.href}
+              to={card.href}
               className="block bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow group"
             >
               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${card.color} mb-3 group-hover:scale-105 transition-transform`} />
               <p className="text-sm font-semibold text-gray-900">{card.title}</p>
               <p className="text-xs text-gray-400 mt-1">{card.desc}</p>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
