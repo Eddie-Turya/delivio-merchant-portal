@@ -5,6 +5,7 @@ import { PaymentsPage } from './pages/PaymentsPage'
 import { APIKeysPage } from './pages/APIKeysPage'
 import { WebhooksPage } from './pages/WebhooksPage'
 import { DocsPage } from './pages/DocsPage'
+import { PlaygroundPage } from './pages/PlaygroundPage'
 import { api } from './api'
 
 function Guard({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/api-keys" element={<Guard><APIKeysPage /></Guard>} />
         <Route path="/webhooks" element={<Guard><WebhooksPage /></Guard>} />
         <Route path="/docs" element={<Guard><DocsPage /></Guard>} />
+        <Route path="/playground" element={<Guard><PlaygroundPage /></Guard>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

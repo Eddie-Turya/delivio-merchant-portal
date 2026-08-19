@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical } from 'lucide-react'
 import { api } from '../api'
 
 const nav = [
@@ -7,6 +7,7 @@ const nav = [
   { to: '/payments', icon: CreditCard, label: 'Transactions' },
   { to: '/api-keys', icon: Key, label: 'API Keys' },
   { to: '/webhooks', icon: Webhook, label: 'Webhooks' },
+  { to: '/playground', icon: FlaskConical, label: 'Playground' },
   { to: '/docs', icon: BookOpen, label: 'API Docs' },
 ]
 
