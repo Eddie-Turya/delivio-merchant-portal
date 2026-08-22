@@ -47,4 +47,11 @@ export const api = {
   updateWebhook: (id: string, patch: { url?: string; events?: string[]; enabled?: boolean }) =>
     req<any>('PATCH', `/webhooks/${id}`, patch),
   deleteWebhook: (id: string) => req<any>('DELETE', `/webhooks/${id}`),
+
+  // Collect
+  collectUssd: (body: { phone: string; amount_minor: number; currency?: string; description?: string }) =>
+    req<any>('POST', '/collect/ussd', body),
+  collectStatus: (paymentId: string) => req<any>('GET', `/collect/status/${paymentId}`),
+  createPaymentLink: (body: { amount_minor: number; currency?: string; description?: string; expires_in_hours?: number }) =>
+    req<any>('POST', '/collect/link', body),
 }

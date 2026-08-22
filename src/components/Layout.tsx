@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2 } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/collect', icon: Link2, label: 'Collect' },
   { to: '/payments', icon: CreditCard, label: 'Transactions' },
   { to: '/api-keys', icon: Key, label: 'API Keys' },
   { to: '/webhooks', icon: Webhook, label: 'Webhooks' },
