@@ -4,7 +4,7 @@ import { api } from '../api'
 import { Smartphone, Link2, CheckCircle2, XCircle, Loader2, Copy, Check, Clock } from 'lucide-react'
 
 function formatTZS(minor: number) {
-  return `TZS ${(minor / 100).toLocaleString('en-TZ', { maximumFractionDigits: 0 })}`
+  return `TZS ${minor.toLocaleString('en-TZ', { maximumFractionDigits: 0 })}`
 }
 
 // ── USSD Push Card ────────────────────────────────────────────────────────────
@@ -26,8 +26,8 @@ function UssdCard() {
 
   async function send() {
     if (!phone.trim() || !amount) { setError('Phone and amount are required.'); return }
-    const amountMinor = Math.round(parseFloat(amount) * 100)
-    if (amountMinor < 200) { setError('Minimum amount is TZS 2.'); return }
+    const amountMinor = Math.round(parseFloat(amount))
+    if (amountMinor < 200) { setError('Minimum amount is TZS 200.'); return }
 
     setError('')
     setState('loading')
@@ -210,8 +210,8 @@ function LinkCard() {
 
   async function generate() {
     if (!amount) { setError('Amount is required.'); return }
-    const amountMinor = Math.round(parseFloat(amount) * 100)
-    if (amountMinor < 200) { setError('Minimum amount is TZS 2.'); return }
+    const amountMinor = Math.round(parseFloat(amount))
+    if (amountMinor < 200) { setError('Minimum amount is TZS 200.'); return }
     setError('')
     setLoading(true)
     try {
