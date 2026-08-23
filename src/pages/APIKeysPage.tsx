@@ -46,12 +46,12 @@ export function APIKeysPage() {
 
   return (
     <Layout>
-      <div className="bg-white border-b border-gray-100 px-6 py-4">
+      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
         <h1 className="text-base font-bold text-gray-900">API Keys</h1>
         <p className="text-xs text-gray-400">Manage credentials for live and sandbox environments</p>
       </div>
 
-      <div className="p-6 space-y-8">
+      <div className="p-4 sm:p-6 space-y-8">
         {/* New key reveal */}
         {newKey && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
@@ -150,9 +150,9 @@ function EnvCard({
 
   return (
     <div className={`rounded-xl border shadow-sm p-6 bg-white ${accent}`}>
-      <div className="flex items-start justify-between mb-5">
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+      <div className="flex items-start justify-between mb-5 gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
             sandbox ? 'bg-violet-100' : 'bg-emerald-100'
           }`}>
             {sandbox
@@ -160,15 +160,15 @@ function EnvCard({
               : <Zap size={15} className="text-emerald-600" />
             }
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-bold text-gray-900 capitalize">{env.name}</p>
-            <p className="text-[11px] text-gray-400 font-mono">ID: {env.id.slice(0, 8)}…</p>
+            <p className="text-[11px] text-gray-400 font-mono truncate">ID: {env.id.slice(0, 8)}…</p>
           </div>
         </div>
         <button
           onClick={() => onRotate(env.id)}
           disabled={rotating === env.id}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition disabled:opacity-50 ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition disabled:opacity-50 flex-shrink-0 min-h-[38px] ${
             sandbox
               ? 'border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300'
               : 'border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200'

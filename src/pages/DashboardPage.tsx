@@ -36,7 +36,7 @@ export function DashboardPage() {
   return (
     <Layout>
       {/* Header */}
-      <div className={`border-b px-6 py-4 flex items-center gap-3 ${isSandbox ? 'bg-violet-950 border-violet-800/60' : 'bg-white border-gray-100'}`}>
+      <div className={`border-b px-4 sm:px-6 py-4 flex items-center gap-3 ${isSandbox ? 'bg-violet-950 border-violet-800/60' : 'bg-white border-gray-100'}`}>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSandbox ? 'bg-violet-500/20' : 'bg-gradient-to-br from-emerald-500 to-teal-600'}`}>
           {isSandbox ? <FlaskConical size={16} className="text-violet-300" /> : <Activity size={16} className="text-white" />}
         </div>
@@ -55,7 +55,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
         {/* Status banner */}
         {merchant.status === 'active' && (
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700">
@@ -81,7 +81,7 @@ export function DashboardPage() {
                     <Icon size={16} className={iconColor} />
                   </div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{label}</p>
-                  <p className="text-xl font-bold text-gray-900 leading-tight mb-1.5 break-all">{value}</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-900 leading-tight mb-1.5 break-all">{value}</p>
                   <p className="text-xs text-gray-400">{sub}</p>
                 </div>
               ))}

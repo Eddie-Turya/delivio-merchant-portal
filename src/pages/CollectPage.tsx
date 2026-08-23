@@ -370,7 +370,7 @@ function LinkCard() {
 export function CollectPage() {
   return (
     <Layout>
-      <div className="border-b px-6 py-4 flex items-center gap-3 bg-white border-gray-100">
+      <div className="border-b px-4 sm:px-6 py-4 flex items-center gap-3 bg-white border-gray-100">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600">
           <Link2 size={16} className="text-white" />
         </div>
@@ -380,8 +380,8 @@ export function CollectPage() {
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-4xl">
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 max-w-4xl">
           <UssdCard />
           <LinkCard />
         </div>

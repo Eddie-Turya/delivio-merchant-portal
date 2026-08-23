@@ -55,7 +55,7 @@ export function PaymentsPage() {
 
   return (
     <Layout>
-      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-base font-bold text-gray-900">Transactions</h1>
@@ -65,18 +65,18 @@ export function PaymentsPage() {
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-400">{total.toLocaleString()} total payments</p>
+          <p className="text-xs text-gray-400">{total.toLocaleString()} payment{total !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={load} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
+        <button onClick={load} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition min-h-[38px]">
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          Refresh
+          <span className="hidden sm:inline">Refresh</span>
         </button>
       </div>
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col gap-3">
+          <div className="relative">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -104,51 +104,86 @@ export function PaymentsPage() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50/70 border-b border-gray-100">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment ID</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <td key={j} className="px-5 py-3.5">
-                        <div className="h-3 bg-gray-100 rounded animate-pulse" style={{ width: `${60 + j * 10}%` }} />
+        {/* Mobile card list */}
+        <div className="sm:hidden space-y-2">
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse space-y-2">
+                <div className="h-3 bg-gray-100 rounded w-3/4" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            ))
+          ) : data.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-sm text-gray-400">No payments found</div>
+          ) : (
+            data.map(p => (
+              <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.reference || '—'}</p>
+                    <p className="text-[11px] font-mono text-gray-400 mt-0.5">{p.id.slice(0, 12)}…</p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold flex-shrink-0 ${statusBadge(p.status)}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                    {p.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-gray-900">{formatTZS(p.amount)}</p>
+                  <p className="text-xs text-gray-400">{new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden sm:block bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50/70 border-b border-gray-100">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment ID</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i}>
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <td key={j} className="px-5 py-3.5">
+                          <div className="h-3 bg-gray-100 rounded animate-pulse" style={{ width: `${60 + j * 10}%` }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : data.length === 0 ? (
+                  <tr><td colSpan={5} className="px-5 py-16 text-center text-sm text-gray-400">No payments found</td></tr>
+                ) : (
+                  data.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-3.5 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}…</td>
+                      <td className="px-5 py-3.5 text-gray-700 font-medium">{p.reference || '—'}</td>
+                      <td className="px-5 py-3.5 font-semibold text-gray-900">{formatTZS(p.amount)}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadge(p.status)}`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                          {p.status}
+                        </span>
                       </td>
-                    ))}
-                  </tr>
-                ))
-              ) : data.length === 0 ? (
-                <tr><td colSpan={5} className="px-5 py-16 text-center text-sm text-gray-400">No payments found</td></tr>
-              ) : (
-                data.map(p => (
-                  <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3.5 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}…</td>
-                    <td className="px-5 py-3.5 text-gray-700 font-medium">{p.reference || '—'}</td>
-                    <td className="px-5 py-3.5 font-semibold text-gray-900">{formatTZS(p.amount)}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadge(p.status)}`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
-                        {p.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-xs text-gray-400">
-                      {new Date(p.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      <td className="px-5 py-3.5 text-xs text-gray-400">
+                        {new Date(p.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -163,6 +198,19 @@ export function PaymentsPage() {
             </div>
           )}
         </div>
+
+        {/* Mobile pagination */}
+        {totalPages > 1 && (
+          <div className="sm:hidden flex items-center justify-between py-1">
+            <p className="text-xs text-gray-400">{page + 1} / {totalPages}</p>
+            <div className="flex gap-2">
+              <button disabled={page === 0} onClick={() => setPage(p => p - 1)}
+                className="px-4 py-2 text-xs rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 min-h-[38px]">← Prev</button>
+              <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}
+                className="px-4 py-2 text-xs rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 min-h-[38px]">Next →</button>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   )

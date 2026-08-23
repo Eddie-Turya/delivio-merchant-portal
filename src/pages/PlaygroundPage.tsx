@@ -189,7 +189,7 @@ export function PlaygroundPage() {
 
   return (
     <Layout>
-      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
             <FlaskConical size={16} className="text-violet-600" />
