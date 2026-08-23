@@ -10,6 +10,10 @@ import { CollectPage } from './pages/CollectPage'
 import { AccountPage } from './pages/AccountPage'
 import { DisbursementPage } from './pages/DisbursementPage'
 import { BulkPage } from './pages/BulkPage'
+import { PaymentDetailPage } from './pages/PaymentDetailPage'
+import { PaymentLinksPage } from './pages/PaymentLinksPage'
+import { TeamPage } from './pages/TeamPage'
+import { SettlementsPage } from './pages/SettlementsPage'
 import { EnvProvider } from './context/EnvContext'
 import { api } from './api'
 
@@ -33,6 +37,10 @@ export default function App() {
         <Route path="/account" element={<Guard><AccountPage /></Guard>} />
         <Route path="/disbursement" element={<Guard><DisbursementPage /></Guard>} />
         <Route path="/bulk" element={<Guard><BulkPage /></Guard>} />
+        <Route path="/payments/:id" element={<Guard><PaymentDetailPage /></Guard>} />
+        <Route path="/payment-links" element={<Guard><PaymentLinksPage /></Guard>} />
+        <Route path="/team" element={<Guard><TeamPage /></Guard>} />
+        <Route path="/settlements" element={<Guard><SettlementsPage /></Guard>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

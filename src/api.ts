@@ -52,6 +52,28 @@ export const api = {
     req<any>('PATCH', '/me', patch),
   webhookLogs: (webhookId: string) => req<any>('GET', `/webhooks/${webhookId}/logs`),
 
+  paymentDetail: (id: string) => req<any>('GET', `/payments/${id}`),
+  refundPayment: (id: string, reason?: string) => req<any>('POST', `/payments/${id}/refund`, { reason }),
+  exportPayments: (params?: { status?: string; search?: string; envType?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.status && params.status !== 'ALL') qs.set('status', params.status)
+    if (params?.search) qs.set('search', params.search)
+    if (params?.envType) qs.set('envType', params.envType)
+    const q = qs.toString()
+    return fetch(`/admin/portal/payments/export${q ? `?${q}` : ''}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('portalToken')}` }
+    }).then(r => r.blob())
+  },
+
+  paymentLinks: () => req<any>('GET', '/payment-links'),
+  deletePaymentLink: (id: string) => req<any>('DELETE', `/payment-links/${id}`),
+
+  team: () => req<any>('GET', '/team'),
+  inviteTeamMember: (email: string, name: string, role: string) => req<any>('POST', '/team', { email, name, role }),
+  removeTeamMember: (id: string) => req<any>('DELETE', `/team/${id}`),
+
+  settlements: () => req<any>('GET', '/settlements'),
+
   // Collect
   collectUssd: (body: { phone: string; amount_minor: number; currency?: string; description?: string }) =>
     req<any>('POST', '/collect/ussd', body),

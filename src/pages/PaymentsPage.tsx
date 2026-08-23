@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
-import { Search, RefreshCw, FlaskConical } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, RefreshCw, FlaskConical, Download } from 'lucide-react'
 
 const STATUSES = ['ALL', 'COMPLETED', 'PENDING', 'FAILED', 'REFUNDED']
 
@@ -29,7 +30,23 @@ export function PaymentsPage() {
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const { mode, isSandbox } = useEnv()
+  const navigate = useNavigate()
   const PAGE = 20
+  const [exporting, setExporting] = useState(false)
+
+  const doExport = async () => {
+    setExporting(true)
+    try {
+      const blob = await api.exportPayments({ status, search, envType: mode })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `payments-${Date.now()}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) { console.error(err) }
+    finally { setExporting(false) }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -67,10 +84,16 @@ export function PaymentsPage() {
           </div>
           <p className="text-xs text-gray-400">{total.toLocaleString()} payment{total !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={load} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition min-h-[38px]">
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={doExport} disabled={exporting} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition min-h-[38px] disabled:opacity-50">
+            <Download size={14} />
+            <span className="hidden sm:inline">{exporting ? 'Exporting…' : 'Export'}</span>
+          </button>
+          <button onClick={load} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition min-h-[38px]">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-4 sm:p-6 space-y-4">
@@ -117,7 +140,7 @@ export function PaymentsPage() {
             <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-sm text-gray-400">No payments found</div>
           ) : (
             data.map(p => (
-              <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div key={p.id} onClick={() => navigate(`/payments/${p.id}`)} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 cursor-pointer hover:border-emerald-200 hover:shadow-md transition-all active:scale-[0.99]">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{p.reference || '—'}</p>
@@ -165,7 +188,7 @@ export function PaymentsPage() {
                   <tr><td colSpan={5} className="px-5 py-16 text-center text-sm text-gray-400">No payments found</td></tr>
                 ) : (
                   data.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={p.id} onClick={() => navigate(`/payments/${p.id}`)} className="hover:bg-gray-50/50 transition-colors cursor-pointer">
                       <td className="px-5 py-3.5 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}…</td>
                       <td className="px-5 py-3.5 text-gray-700 font-medium">{p.reference || '—'}</td>
                       <td className="px-5 py-3.5 font-semibold text-gray-900">{formatTZS(p.amount)}</td>
