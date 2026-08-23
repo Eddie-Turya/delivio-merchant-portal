@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3 } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { useIdleTimeout } from '../hooks/useIdleTimeout'
@@ -8,7 +8,9 @@ import { useIdleTimeout } from '../hooks/useIdleTimeout'
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/collect', icon: Link2, label: 'Collect' },
+  { to: '/bulk', icon: Rows3, label: 'Bulk', soon: true },
   { to: '/payments', icon: CreditCard, label: 'Transactions' },
+  { to: '/disbursement', icon: ArrowUpRight, label: 'Disbursement', soon: true },
   { to: '/api-keys', icon: Key, label: 'API Keys' },
   { to: '/webhooks', icon: Webhook, label: 'Webhooks' },
   { to: '/playground', icon: FlaskConical, label: 'Playground' },
@@ -76,7 +78,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
-        {nav.map(({ to, icon: Icon, label }) => (
+        {nav.map(({ to, icon: Icon, label, soon }: any) => (
           <NavLink
             key={to}
             to={to}
@@ -90,21 +92,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
             }
           >
             <Icon size={17} className="flex-shrink-0" />
-            {label}
+            <span className="flex-1">{label}</span>
+            {soon && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">SOON</span>}
           </NavLink>
         ))}
       </nav>
 
       <div className="border-t border-white/[0.06] p-3 space-y-1">
-        <div className="flex items-center gap-2 px-3 py-2">
-          <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center">
+        <NavLink
+          to="/account"
+          onClick={() => setOpen(false)}
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isActive ? 'bg-emerald-500/10' : 'hover:bg-white/5'}`
+          }
+        >
+          <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
             <User size={14} className="text-emerald-400" />
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-300 truncate">{merchant.name || 'Merchant'}</p>
-            <p className="text-[10px] text-slate-600 truncate">{merchant.slug}</p>
+            <p className="text-[10px] text-slate-500 truncate">{merchant.slug}</p>
           </div>
-        </div>
+        </NavLink>
         <button
           onClick={doLogout}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-all"

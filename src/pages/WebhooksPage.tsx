@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { Webhook, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, X, ShieldCheck } from 'lucide-react'
+import { Webhook, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, X, ShieldCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle } from 'lucide-react'
 
 const ALL_EVENTS = [
   'payment.completed',
@@ -20,6 +20,9 @@ export function WebhooksPage() {
   const [creating, setCreating] = useState(false)
   const [newSecret, setNewSecret] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [expandedLogs, setExpandedLogs] = useState<string | null>(null)
+  const [logs, setLogs] = useState<Record<string, any[]>>({})
+  const [logsLoading, setLogsLoading] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -63,6 +66,18 @@ export function WebhooksPage() {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const toggleLogs = async (id: string) => {
+    if (expandedLogs === id) { setExpandedLogs(null); return }
+    setExpandedLogs(id)
+    if (logs[id]) return
+    setLogsLoading(id)
+    try {
+      const res = await api.webhookLogs(id)
+      setLogs(prev => ({ ...prev, [id]: res.data }))
+    } catch { setLogs(prev => ({ ...prev, [id]: [] })) }
+    finally { setLogsLoading(null) }
   }
 
   return (
@@ -162,37 +177,83 @@ export function WebhooksPage() {
           </div>
         ) : (
           hooks.map(hook => (
-            <div key={hook.id} className={`bg-white rounded-xl border shadow-sm p-5 ${hook.enabled ? 'border-gray-100' : 'border-gray-100 opacity-70'}`}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hook.enabled ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                    <code className="text-sm font-mono text-gray-800 break-all line-clamp-2">{hook.url}</code>
+            <div key={hook.id} className={`bg-white rounded-xl border shadow-sm overflow-hidden ${hook.enabled ? 'border-gray-100' : 'border-gray-100 opacity-70'}`}>
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hook.enabled ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                      <code className="text-sm font-mono text-gray-800 break-all line-clamp-2">{hook.url}</code>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {hook.events.map((e: string) => (
+                        <span key={e} className="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-mono text-gray-600">{e}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Added {new Date(hook.created_at).toLocaleDateString()}</p>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {hook.events.map((e: string) => (
-                      <span key={e} className="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-mono text-gray-600">{e}</span>
-                    ))}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => toggleEnabled(hook.id, hook.enabled)}
+                      className="text-gray-400 hover:text-gray-700 transition"
+                      title={hook.enabled ? 'Disable' : 'Enable'}
+                    >
+                      {hook.enabled ? <ToggleRight size={22} className="text-emerald-500" /> : <ToggleLeft size={22} />}
+                    </button>
+                    <button
+                      onClick={() => remove(hook.id)}
+                      className="text-gray-400 hover:text-red-500 transition p-1"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">Added {new Date(hook.created_at).toLocaleDateString()}</p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => toggleEnabled(hook.id, hook.enabled)}
-                    className="text-gray-400 hover:text-gray-700 transition"
-                    title={hook.enabled ? 'Disable' : 'Enable'}
-                  >
-                    {hook.enabled ? <ToggleRight size={22} className="text-emerald-500" /> : <ToggleLeft size={22} />}
-                  </button>
-                  <button
-                    onClick={() => remove(hook.id)}
-                    className="text-gray-400 hover:text-red-500 transition p-1"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => toggleLogs(hook.id)}
+                  className="mt-3 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition font-medium"
+                >
+                  {expandedLogs === hook.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  Delivery logs
+                </button>
               </div>
+
+              {expandedLogs === hook.id && (
+                <div className="border-t border-gray-100 bg-gray-50/60">
+                  {logsLoading === hook.id ? (
+                    <div className="p-4 space-y-2">
+                      {[1,2,3].map(i => <div key={i} className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />)}
+                    </div>
+                  ) : !logs[hook.id]?.length ? (
+                    <p className="text-xs text-gray-400 text-center py-6">No delivery attempts yet</p>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {logs[hook.id].map((log: any) => (
+                        <div key={log.id} className="flex items-center gap-3 px-5 py-2.5">
+                          {log.success
+                            ? <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
+                            : <XCircle size={14} className="text-red-400 flex-shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono font-semibold text-gray-700">{log.event_type}</span>
+                              {log.status_code && (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${log.success ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+                                  {log.status_code}
+                                </span>
+                              )}
+                              {log.duration_ms && <span className="text-[10px] text-gray-400">{log.duration_ms}ms</span>}
+                            </div>
+                            {log.error && <p className="text-[10px] text-red-400 truncate mt-0.5">{log.error}</p>}
+                          </div>
+                          <p className="text-[10px] text-gray-400 flex-shrink-0">
+                            {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}

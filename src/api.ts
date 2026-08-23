@@ -48,6 +48,10 @@ export const api = {
     req<any>('PATCH', `/webhooks/${id}`, patch),
   deleteWebhook: (id: string) => req<any>('DELETE', `/webhooks/${id}`),
 
+  updateMe: (patch: { name?: string; currentPassword?: string; newPassword?: string }) =>
+    req<any>('PATCH', '/me', patch),
+  webhookLogs: (webhookId: string) => req<any>('GET', `/webhooks/${webhookId}/logs`),
+
   // Collect
   collectUssd: (body: { phone: string; amount_minor: number; currency?: string; description?: string }) =>
     req<any>('POST', '/collect/ussd', body),

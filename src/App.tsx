@@ -7,6 +7,9 @@ import { WebhooksPage } from './pages/WebhooksPage'
 import { DocsPage } from './pages/DocsPage'
 import { PlaygroundPage } from './pages/PlaygroundPage'
 import { CollectPage } from './pages/CollectPage'
+import { AccountPage } from './pages/AccountPage'
+import { DisbursementPage } from './pages/DisbursementPage'
+import { BulkPage } from './pages/BulkPage'
 import { EnvProvider } from './context/EnvContext'
 import { api } from './api'
 
@@ -27,6 +30,9 @@ export default function App() {
         <Route path="/docs" element={<Guard><DocsPage /></Guard>} />
         <Route path="/collect" element={<Guard><CollectPage /></Guard>} />
         <Route path="/playground" element={<Guard><PlaygroundPage /></Guard>} />
+        <Route path="/account" element={<Guard><AccountPage /></Guard>} />
+        <Route path="/disbursement" element={<Guard><DisbursementPage /></Guard>} />
+        <Route path="/bulk" element={<Guard><BulkPage /></Guard>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
