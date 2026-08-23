@@ -1,7 +1,45 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { User, Building2, Mail, KeyRound, Check, AlertCircle } from 'lucide-react'
+import {
+  User, Building2, Mail, KeyRound, Check, AlertCircle,
+  ShieldCheck, FileText, Landmark, Smartphone, BadgeCheck,
+  Clock, Bell, BellOff, Lock, Upload,
+} from 'lucide-react'
+
+function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white rounded-xl border border-gray-100 shadow-sm p-5 ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+function CardHeader({ icon: Icon, title, badge }: { icon: any; title: string; badge?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2">
+        <Icon size={16} className="text-gray-400" />
+        <h2 className="text-sm font-bold text-gray-900">{title}</h2>
+      </div>
+      {badge}
+    </div>
+  )
+}
+
+const KYC_STEPS = [
+  { icon: User, label: 'Identity Document', sub: 'National ID or Passport', done: true },
+  { icon: FileText, label: 'Business Registration', sub: 'TIN or BRELA certificate', done: true },
+  { icon: Landmark, label: 'Bank Account', sub: 'Statement or letter', done: true },
+  { icon: Smartphone, label: 'Mobile Money', sub: 'Registered business number', done: false },
+]
+
+const NOTIF_OPTIONS = [
+  { key: 'payment_completed', label: 'Payment completed', sub: 'Email when a customer pays', default: true },
+  { key: 'payment_failed', label: 'Payment failed', sub: 'Email when a payment fails', default: true },
+  { key: 'weekly_digest', label: 'Weekly digest', sub: 'Summary of transactions every Monday', default: false },
+  { key: 'reconciliation_alerts', label: 'Reconciliation alerts', sub: 'When stuck payments are auto-resolved', default: false },
+]
 
 export function AccountPage() {
   const [profile, setProfile] = useState<any>(null)
@@ -16,6 +54,10 @@ export function AccountPage() {
   const [pwSaving, setPwSaving] = useState(false)
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
+  const [notifs, setNotifs] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(NOTIF_OPTIONS.map(o => [o.key, o.default]))
+  )
+
   useEffect(() => {
     api.me().then((data: any) => {
       setProfile(data)
@@ -24,145 +66,243 @@ export function AccountPage() {
   }, [])
 
   const saveName = async () => {
-    setSaving(true)
-    setSaveMsg(null)
+    setSaving(true); setSaveMsg(null)
     try {
       await (api as any).updateMe({ name })
       setSaveMsg({ ok: true, text: 'Name updated' })
     } catch (err: any) {
       setSaveMsg({ ok: false, text: err.message })
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   const changePassword = async () => {
     if (newPw !== confirmPw) { setPwMsg({ ok: false, text: 'Passwords do not match' }); return }
-    if (newPw.length < 8) { setPwMsg({ ok: false, text: 'Password must be at least 8 characters' }); return }
-    setPwSaving(true)
-    setPwMsg(null)
+    if (newPw.length < 8) { setPwMsg({ ok: false, text: 'At least 8 characters required' }); return }
+    setPwSaving(true); setPwMsg(null)
     try {
       await (api as any).updateMe({ currentPassword: currentPw, newPassword: newPw })
       setPwMsg({ ok: true, text: 'Password changed successfully' })
       setCurrentPw(''); setNewPw(''); setConfirmPw('')
     } catch (err: any) {
       setPwMsg({ ok: false, text: err.message })
-    } finally {
-      setPwSaving(false)
-    }
+    } finally { setPwSaving(false) }
   }
+
+  const completedSteps = KYC_STEPS.filter(s => s.done).length
 
   return (
     <Layout>
       <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
         <h1 className="text-base font-bold text-gray-900">Account</h1>
-        <p className="text-xs text-gray-400 hidden sm:block">Manage your profile and security settings</p>
+        <p className="text-xs text-gray-400 hidden sm:block">Manage your profile, verification, and security settings</p>
       </div>
 
-      <div className="p-4 sm:p-6 space-y-5 max-w-xl">
+      <div className="p-4 sm:p-6">
         {loading ? (
-          <div className="space-y-4">
-            {[1,2].map(i => <div key={i} className="bg-white rounded-xl border border-gray-100 p-6 animate-pulse h-32" />)}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {[1,2,3,4].map(i => <div key={i} className="bg-white rounded-xl border border-gray-100 p-6 animate-pulse h-40" />)}
           </div>
         ) : (
-          <>
-            {/* Business info (read-only) */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 size={16} className="text-gray-400" />
-                <h2 className="text-sm font-bold text-gray-900">Business</h2>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Merchant Name</p>
-                  <p className="text-sm text-gray-900 font-medium">{profile?.merchant?.name || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Slug</p>
-                  <p className="text-sm font-mono text-gray-600">{profile?.merchant?.slug || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</p>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {profile?.merchant?.status || 'active'}
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
-            {/* Profile */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <User size={16} className="text-gray-400" />
-                <h2 className="text-sm font-bold text-gray-900">Profile</h2>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</p>
-                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
-                    <Mail size={14} className="text-gray-400" />
-                    <p className="text-sm text-gray-600">{profile?.user?.email || '—'}</p>
+            {/* ── LEFT COLUMN ── */}
+            <div className="space-y-5">
+
+              {/* Business */}
+              <Card>
+                <CardHeader icon={Building2} title="Business" />
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Merchant Name</p>
+                    <p className="text-sm text-gray-900 font-medium">{profile?.merchant?.name || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Slug</p>
+                    <p className="text-sm font-mono text-gray-600">{profile?.merchant?.slug || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</p>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {profile?.merchant?.status || 'active'}
+                    </span>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Display Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400"
-                    placeholder="Your name"
-                  />
-                </div>
-                {saveMsg && (
-                  <div className={`flex items-center gap-2 text-xs font-medium ${saveMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {saveMsg.ok ? <Check size={14} /> : <AlertCircle size={14} />} {saveMsg.text}
-                  </div>
-                )}
-                <button
-                  onClick={saveName}
-                  disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
-                >
-                  {saving ? 'Saving…' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
+              </Card>
 
-            {/* Change password */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <KeyRound size={16} className="text-gray-400" />
-                <h2 className="text-sm font-bold text-gray-900">Change Password</h2>
-              </div>
-              <div className="space-y-3">
-                {(['Current password', 'New password', 'Confirm new password'] as const).map((label, i) => (
-                  <div key={i}>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+              {/* Profile */}
+              <Card>
+                <CardHeader icon={User} title="Profile" />
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</p>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
+                      <Mail size={14} className="text-gray-400" />
+                      <p className="text-sm text-gray-600">{profile?.user?.email || '—'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Display Name</label>
                     <input
-                      type="password"
-                      value={i === 0 ? currentPw : i === 1 ? newPw : confirmPw}
-                      onChange={e => { if (i === 0) setCurrentPw(e.target.value); else if (i === 1) setNewPw(e.target.value); else setConfirmPw(e.target.value) }}
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400"
+                      placeholder="Your name"
                     />
                   </div>
-                ))}
-                {pwMsg && (
-                  <div className={`flex items-center gap-2 text-xs font-medium ${pwMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {pwMsg.ok ? <Check size={14} /> : <AlertCircle size={14} />} {pwMsg.text}
-                  </div>
-                )}
-                <button
-                  onClick={changePassword}
-                  disabled={pwSaving || !currentPw || !newPw || !confirmPw}
-                  className="bg-gray-900 hover:bg-gray-800 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
-                >
-                  {pwSaving ? 'Updating…' : 'Update Password'}
-                </button>
-              </div>
+                  {saveMsg && (
+                    <div className={`flex items-center gap-2 text-xs font-medium ${saveMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {saveMsg.ok ? <Check size={14} /> : <AlertCircle size={14} />} {saveMsg.text}
+                    </div>
+                  )}
+                  <button onClick={saveName} disabled={saving}
+                    className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    {saving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </div>
+              </Card>
+
+              {/* Change password */}
+              <Card>
+                <CardHeader icon={KeyRound} title="Change Password" />
+                <div className="space-y-3">
+                  {[['Current password', currentPw, setCurrentPw], ['New password', newPw, setNewPw], ['Confirm new password', confirmPw, setConfirmPw]] .map(([label, val, set]: any, i) => (
+                    <div key={i}>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+                      <input type="password" value={val} onChange={e => set(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400" />
+                    </div>
+                  ))}
+                  {pwMsg && (
+                    <div className={`flex items-center gap-2 text-xs font-medium ${pwMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {pwMsg.ok ? <Check size={14} /> : <AlertCircle size={14} />} {pwMsg.text}
+                    </div>
+                  )}
+                  <button onClick={changePassword} disabled={pwSaving || !currentPw || !newPw || !confirmPw}
+                    className="bg-gray-900 hover:bg-gray-800 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    {pwSaving ? 'Updating…' : 'Update Password'}
+                  </button>
+                </div>
+              </Card>
+
             </div>
-          </>
+
+            {/* ── RIGHT COLUMN ── */}
+            <div className="space-y-5">
+
+              {/* ID Verification */}
+              <Card>
+                <CardHeader icon={ShieldCheck} title="ID Verification"
+                  badge={
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      completedSteps === KYC_STEPS.length
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {completedSteps}/{KYC_STEPS.length} Verified
+                    </span>
+                  }
+                />
+
+                {/* Progress bar */}
+                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+                  <div
+                    className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                    style={{ width: `${(completedSteps / KYC_STEPS.length) * 100}%` }}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  {KYC_STEPS.map(({ icon: Icon, label, sub, done }) => (
+                    <div key={label} className={`flex items-center gap-3 p-3 rounded-lg border ${done ? 'border-emerald-100 bg-emerald-50/40' : 'border-gray-100 bg-gray-50/60'}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${done ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                        <Icon size={15} className={done ? 'text-emerald-600' : 'text-gray-400'} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-semibold ${done ? 'text-gray-900' : 'text-gray-500'}`}>{label}</p>
+                        <p className="text-[11px] text-gray-400">{sub}</p>
+                      </div>
+                      {done
+                        ? <BadgeCheck size={16} className="text-emerald-500 flex-shrink-0" />
+                        : <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex-shrink-0">PENDING</span>
+                      }
+                    </div>
+                  ))}
+                </div>
+
+                {completedSteps < KYC_STEPS.length && (
+                  <button className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-gray-300 rounded-lg text-xs font-semibold text-gray-500 hover:border-emerald-400 hover:text-emerald-600 transition">
+                    <Upload size={13} /> Upload Missing Documents
+                  </button>
+                )}
+              </Card>
+
+              {/* Security */}
+              <Card>
+                <CardHeader icon={Lock} title="Security" />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/60">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">Two-Factor Authentication</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Add a second layer of security to your account</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-600">SOON</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/60">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">Active Sessions</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">You're signed in on this device</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      1 active
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/60">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">Last Login</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        {profile?.user?.created_at
+                          ? new Date(profile.user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : 'Unknown'}
+                      </p>
+                    </div>
+                    <Clock size={14} className="text-gray-300" />
+                  </div>
+                </div>
+              </Card>
+
+              {/* Notification preferences */}
+              <Card>
+                <CardHeader icon={Bell} title="Notifications" />
+                <div className="space-y-2">
+                  {NOTIF_OPTIONS.map(({ key, label, sub }) => (
+                    <div key={key} className="flex items-center justify-between gap-3 py-2.5 border-b border-gray-50 last:border-0">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-gray-800">{label}</p>
+                        <p className="text-[11px] text-gray-400">{sub}</p>
+                      </div>
+                      <button
+                        onClick={() => setNotifs(prev => ({ ...prev, [key]: !prev[key] }))}
+                        className={`flex-shrink-0 w-8 h-4.5 rounded-full relative transition-colors duration-200 focus:outline-none ${notifs[key] ? 'bg-emerald-500' : 'bg-gray-200'}`}
+                        style={{ height: '18px', width: '32px' }}
+                      >
+                        <span className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-all duration-200 ${notifs[key] ? 'left-[14px]' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-400">
+                  <BellOff size={12} />
+                  Notification emails are sent to {profile?.user?.email}
+                </div>
+              </Card>
+
+            </div>
+          </div>
         )}
       </div>
     </Layout>
