@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2 } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
+import { useIdleTimeout } from '../hooks/useIdleTimeout'
 
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -18,7 +19,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const merchant = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
   const [open, setOpen] = useState(false)
+  const [idleWarning, setIdleWarning] = useState(false)
   const { mode, setMode, isSandbox } = useEnv()
+
+  const doLogout = useCallback(() => {
+    api.logout()
+    localStorage.removeItem('portalMerchant')
+    navigate('/login')
+  }, [navigate])
+
+  const onWarn = useCallback(() => setIdleWarning(true), [])
+
+  useIdleTimeout(doLogout, onWarn)
 
   const sidebar = (
     <aside className="w-60 bg-[#0d1117] flex flex-col h-full">
@@ -94,7 +106,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <button
-          onClick={() => { api.logout(); localStorage.removeItem('portalMerchant'); navigate('/login') }}
+          onClick={doLogout}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-all"
         >
           <LogOut size={16} />
@@ -140,6 +152,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-bold text-white">Delivio Pay</span>
           </div>
         </div>
+
+        {/* Idle warning banner */}
+        {idleWarning && (
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
+            <Clock size={15} className="text-amber-400 flex-shrink-0" />
+            <p className="text-xs text-amber-300 flex-1">
+              You'll be logged out in <strong>1 minute</strong> due to inactivity.
+            </p>
+            <button
+              onClick={() => setIdleWarning(false)}
+              className="text-xs font-semibold text-amber-400 hover:text-amber-200 whitespace-nowrap"
+            >
+              Stay logged in
+            </button>
+          </div>
+        )}
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">{children}</main>
