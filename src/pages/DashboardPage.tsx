@@ -6,9 +6,6 @@ import { useEnv } from '../context/EnvContext'
 import { TrendingUp, CreditCard, DollarSign, AlertTriangle, RotateCcw, Activity, FlaskConical, ArrowRight } from 'lucide-react'
 
 function formatTZS(n: number) {
-  if (n >= 1_000_000_000) return `TZS ${(n / 1_000_000_000).toFixed(2)}B`
-  if (n >= 1_000_000) return `TZS ${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `TZS ${(n / 1_000).toFixed(0)}K`
   return `TZS ${n.toLocaleString()}`
 }
 
@@ -68,7 +65,7 @@ export function DashboardPage() {
         )}
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {loading
             ? Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="bg-white rounded-xl border border-gray-100 p-5">
@@ -84,7 +81,7 @@ export function DashboardPage() {
                     <Icon size={16} className={iconColor} />
                   </div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{label}</p>
-                  <p className="text-2xl font-bold text-gray-900 leading-none mb-1.5">{value}</p>
+                  <p className="text-xl font-bold text-gray-900 leading-tight mb-1.5 break-all">{value}</p>
                   <p className="text-xs text-gray-400">{sub}</p>
                 </div>
               ))}
