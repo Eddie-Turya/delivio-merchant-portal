@@ -61,7 +61,7 @@ export function TeamPage() {
         </button>
       </div>
 
-      <div className="p-4 sm:p-6 space-y-5 max-w-2xl">
+      <div className="p-4 sm:p-6 space-y-5">
         {/* Temp password reveal */}
         {newCred && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">

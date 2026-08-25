@@ -36,7 +36,7 @@ export function SupportPage() {
         <p className="text-xs text-gray-400">Get help with your integration</p>
       </div>
 
-      <div className="p-4 sm:p-6 space-y-6 max-w-3xl">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Contact cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
