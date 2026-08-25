@@ -13,7 +13,6 @@ import { BulkPage } from './pages/BulkPage'
 import { PaymentDetailPage } from './pages/PaymentDetailPage'
 import { PaymentLinksPage } from './pages/PaymentLinksPage'
 import { TeamPage } from './pages/TeamPage'
-import { SettlementsPage } from './pages/SettlementsPage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { CustomersPage } from './pages/CustomersPage'
 import { AuditLogPage } from './pages/AuditLogPage'
@@ -44,7 +43,6 @@ export default function App() {
         <Route path="/payments/:id" element={<Guard><PaymentDetailPage /></Guard>} />
         <Route path="/payment-links" element={<Guard><PaymentLinksPage /></Guard>} />
         <Route path="/team" element={<Guard><TeamPage /></Guard>} />
-        <Route path="/settlements" element={<Guard><SettlementsPage /></Guard>} />
         <Route path="/analytics" element={<Guard><AnalyticsPage /></Guard>} />
         <Route path="/customers" element={<Guard><CustomersPage /></Guard>} />
         <Route path="/audit" element={<Guard><AuditLogPage /></Guard>} />

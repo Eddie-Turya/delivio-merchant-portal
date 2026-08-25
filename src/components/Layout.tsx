@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Wallet, Users, BarChart2, UserCheck, Shield, HelpCircle } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Users, BarChart2, UserCheck, Shield, HelpCircle } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { useIdleTimeout } from '../hooks/useIdleTimeout'
@@ -14,7 +14,6 @@ const nav = [
   { to: '/payments', icon: CreditCard, label: 'Transactions' },
   { to: '/customers', icon: UserCheck, label: 'Customers' },
   { to: '/disbursement', icon: ArrowUpRight, label: 'Disbursement', soon: true },
-  { to: '/settlements', icon: Wallet, label: 'Settlements' },
   { to: '/team', icon: Users, label: 'Team' },
   { to: '/api-keys', icon: Key, label: 'API Keys' },
   { to: '/webhooks', icon: Webhook, label: 'Webhooks' },
