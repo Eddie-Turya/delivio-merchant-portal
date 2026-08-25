@@ -107,6 +107,7 @@ export function PaymentDetailPage() {
                       </button>
                     </span>],
                     ['Reference', <span className="text-sm text-gray-700">{data.reference || '—'}</span>],
+                    ['Payer Phone', <span className="text-sm text-gray-700">{data.payerPhone || '—'}</span>],
                     ['Environment', <span className={`text-xs font-semibold px-2 py-0.5 rounded ${data.environment?.name?.includes('sandbox') || data.environment?.prefix?.includes('test') ? 'bg-violet-100 text-violet-700' : 'bg-emerald-100 text-emerald-700'}`}>{data.environment?.name || '—'}</span>],
                     ['Created', <span className="text-sm text-gray-600">{new Date(data.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>],
                     ['Updated', <span className="text-sm text-gray-600">{new Date(data.updatedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>],

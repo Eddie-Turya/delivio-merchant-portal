@@ -181,6 +181,7 @@ export function PaymentsPage() {
                   <p className="text-sm font-bold text-gray-900">{formatTZS(p.amount)}</p>
                   <p className="text-xs text-gray-400">{new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
+                {p.payer_phone && <p className="text-[11px] text-gray-400 mt-1">{p.payer_phone}</p>}
               </div>
             ))
           )}
@@ -194,6 +195,7 @@ export function PaymentsPage() {
                 <tr className="bg-gray-50/70 border-b border-gray-100">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment ID</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
@@ -211,12 +213,13 @@ export function PaymentsPage() {
                     </tr>
                   ))
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={5} className="px-5 py-16 text-center text-sm text-gray-400">No payments found</td></tr>
+                  <tr><td colSpan={6} className="px-5 py-16 text-center text-sm text-gray-400">No payments found</td></tr>
                 ) : (
                   data.map(p => (
                     <tr key={p.id} onClick={() => navigate(`/payments/${p.id}`)} className="hover:bg-gray-50/50 transition-colors cursor-pointer">
                       <td className="px-5 py-3.5 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}…</td>
                       <td className="px-5 py-3.5 text-gray-700 font-medium">{p.reference || '—'}</td>
+                      <td className="px-5 py-3.5 text-gray-500 text-xs">{p.payer_phone || '—'}</td>
                       <td className="px-5 py-3.5 font-semibold text-gray-900">{formatTZS(p.amount)}</td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadge(p.status)}`}>
