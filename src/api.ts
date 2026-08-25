@@ -15,7 +15,10 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   })
   if (res.status === 204) return undefined as T
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+  if (!res.ok) {
+    const msg = typeof data.error === 'string' ? data.error : (data.error?.message || `HTTP ${res.status}`)
+    throw new Error(msg)
+  }
   return data
 }
 

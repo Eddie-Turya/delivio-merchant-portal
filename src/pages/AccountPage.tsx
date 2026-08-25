@@ -85,7 +85,10 @@ export function AccountPage() {
         body: form,
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      if (!res.ok) {
+        const msg = typeof data.error === 'string' ? data.error : (data.error?.message || 'Upload failed')
+        throw new Error(msg)
+      }
       setKyc(prev => ({ ...prev, [type]: { status: 'PENDING', uploaded_at: new Date().toISOString() } }))
       setUploadMsg({ type, ok: true, text: 'Document submitted for review' })
     } catch (err: any) {
