@@ -104,7 +104,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         ))}
       </nav>
 
-      <div className="border-t border-white/[0.06] p-3 space-y-1">
+      <div className="md:hidden border-t border-white/[0.06] p-3 space-y-1">
         <NavLink
           to="/account"
           onClick={() => setOpen(false)}
@@ -152,6 +152,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Desktop header */}
+        <div className="hidden md:flex items-center justify-end gap-2 px-5 py-3 bg-white border-b border-gray-100 flex-shrink-0">
+          <NavLink
+            to="/account"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-emerald-500/10 text-emerald-600'
+                  : 'text-slate-500 hover:bg-gray-100 hover:text-slate-700'
+              }`
+            }
+          >
+            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <User size={13} className="text-emerald-500" />
+            </div>
+            <span>{merchant.name || 'Account'}</span>
+          </NavLink>
+          <button
+            onClick={doLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+          >
+            <LogOut size={14} />
+            Logout
+          </button>
+        </div>
+
         {/* Mobile top bar */}
         <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#0d1117] border-b border-white/[0.06] flex-shrink-0">
           <button
