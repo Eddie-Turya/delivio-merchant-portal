@@ -3,8 +3,7 @@ import { Layout } from '../components/Layout'
 import { api } from '../api'
 import {
   User, Building2, Mail, KeyRound, Check, AlertCircle,
-  ShieldCheck, FileText, Landmark, Smartphone, BadgeCheck,
-  Clock, Bell, BellOff, Lock, Upload,
+  Clock, Bell, BellOff, Lock,
 } from 'lucide-react'
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -27,12 +26,6 @@ function CardHeader({ icon: Icon, title, badge }: { icon: any; title: string; ba
   )
 }
 
-const KYC_STEPS = [
-  { icon: User, label: 'Identity Document', sub: 'National ID or Passport', done: true },
-  { icon: FileText, label: 'Business Registration', sub: 'TIN or BRELA certificate', done: true },
-  { icon: Landmark, label: 'Bank Account', sub: 'Statement or letter', done: true },
-  { icon: Smartphone, label: 'Mobile Money', sub: 'Registered business number', done: false },
-]
 
 const NOTIF_OPTIONS = [
   { key: 'payment_completed', label: 'Payment completed', sub: 'Email when a customer pays', default: true },
@@ -88,7 +81,6 @@ export function AccountPage() {
     } finally { setPwSaving(false) }
   }
 
-  const completedSteps = KYC_STEPS.filter(s => s.done).length
 
   return (
     <Layout>
@@ -191,52 +183,6 @@ export function AccountPage() {
             {/* ── RIGHT COLUMN ── */}
             <div className="space-y-5">
 
-              {/* ID Verification */}
-              <Card>
-                <CardHeader icon={ShieldCheck} title="ID Verification"
-                  badge={
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      completedSteps === KYC_STEPS.length
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {completedSteps}/{KYC_STEPS.length} Verified
-                    </span>
-                  }
-                />
-
-                {/* Progress bar */}
-                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
-                  <div
-                    className="bg-emerald-500 h-1.5 rounded-full transition-all"
-                    style={{ width: `${(completedSteps / KYC_STEPS.length) * 100}%` }}
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  {KYC_STEPS.map(({ icon: Icon, label, sub, done }) => (
-                    <div key={label} className={`flex items-center gap-3 p-3 rounded-lg border ${done ? 'border-emerald-100 bg-emerald-50/40' : 'border-gray-100 bg-gray-50/60'}`}>
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${done ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                        <Icon size={15} className={done ? 'text-emerald-600' : 'text-gray-400'} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold ${done ? 'text-gray-900' : 'text-gray-500'}`}>{label}</p>
-                        <p className="text-[11px] text-gray-400">{sub}</p>
-                      </div>
-                      {done
-                        ? <BadgeCheck size={16} className="text-emerald-500 flex-shrink-0" />
-                        : <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex-shrink-0">PENDING</span>
-                      }
-                    </div>
-                  ))}
-                </div>
-
-                {completedSteps < KYC_STEPS.length && (
-                  <button className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-gray-300 rounded-lg text-xs font-semibold text-gray-500 hover:border-emerald-400 hover:text-emerald-600 transition">
-                    <Upload size={13} /> Upload Missing Documents
-                  </button>
-                )}
-              </Card>
 
               {/* Security */}
               <Card>
