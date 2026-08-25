@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
-import { TrendingUp, CreditCard, DollarSign, AlertTriangle, RotateCcw, Activity, FlaskConical, ArrowRight } from 'lucide-react'
+import { TrendingUp, CreditCard, DollarSign, AlertTriangle, RotateCcw, Activity, FlaskConical, ArrowRight, CheckCircle2, Circle } from 'lucide-react'
 
 function formatTZS(n: number) {
   return `TZS ${n.toLocaleString()}`
@@ -16,13 +16,17 @@ function Sk({ className = '' }: { className?: string }) {
 export function DashboardPage() {
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [onboarding, setOnboarding] = useState<any>(null)
   const merchant = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
   const { mode, isSandbox } = useEnv()
 
   useEffect(() => {
     setLoading(true)
     setStats(null)
-    api.stats(mode).then(setStats).catch(console.error).finally(() => setLoading(false))
+    Promise.all([
+      api.stats(mode).then(setStats),
+      api.onboarding().then(setOnboarding).catch(() => null),
+    ]).catch(console.error).finally(() => setLoading(false))
   }, [mode])
 
   const cards = stats ? [
@@ -120,6 +124,39 @@ export function DashboardPage() {
                   Manage API keys <ArrowRight size={12} />
                 </Link>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Setup checklist for new merchants */}
+        {onboarding && !onboarding.complete && (
+          <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-bold text-gray-900">Complete your setup</p>
+                <p className="text-xs text-gray-400">
+                  {onboarding.steps.filter((s: any) => s.done).length} of {onboarding.steps.length} steps done
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-amber-50 border-4 border-amber-200 flex items-center justify-center text-xs font-bold text-amber-600">
+                {Math.round((onboarding.steps.filter((s: any) => s.done).length / onboarding.steps.length) * 100)}%
+              </div>
+            </div>
+            <div className="w-full bg-amber-100 rounded-full h-1.5 mb-4">
+              <div
+                className="bg-amber-400 h-1.5 rounded-full transition-all"
+                style={{ width: `${(onboarding.steps.filter((s: any) => s.done).length / onboarding.steps.length) * 100}%` }}
+              />
+            </div>
+            <div className="space-y-2.5">
+              {onboarding.steps.map((step: any) => (
+                <div key={step.key} className="flex items-center gap-3">
+                  {step.done
+                    ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" />
+                    : <Circle size={16} className="text-gray-300 flex-shrink-0" />}
+                  <span className={`text-sm ${step.done ? 'line-through text-gray-400' : 'text-gray-700'}`}>{step.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}

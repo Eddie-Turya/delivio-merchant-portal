@@ -1,23 +1,27 @@
 import { useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Wallet, Users } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Wallet, Users, BarChart2, UserCheck, Shield, HelpCircle } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { useIdleTimeout } from '../hooks/useIdleTimeout'
 
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/collect', icon: Link2, label: 'Collect' },
   { to: '/payment-links', icon: Link2, label: 'Payment Links' },
   { to: '/bulk', icon: Rows3, label: 'Bulk', soon: true },
   { to: '/payments', icon: CreditCard, label: 'Transactions' },
+  { to: '/customers', icon: UserCheck, label: 'Customers' },
   { to: '/disbursement', icon: ArrowUpRight, label: 'Disbursement', soon: true },
   { to: '/settlements', icon: Wallet, label: 'Settlements' },
   { to: '/team', icon: Users, label: 'Team' },
   { to: '/api-keys', icon: Key, label: 'API Keys' },
   { to: '/webhooks', icon: Webhook, label: 'Webhooks' },
+  { to: '/audit', icon: Shield, label: 'Audit Log' },
   { to: '/playground', icon: FlaskConical, label: 'Playground' },
   { to: '/docs', icon: BookOpen, label: 'API Docs' },
+  { to: '/support', icon: HelpCircle, label: 'Support' },
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {

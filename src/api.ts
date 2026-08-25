@@ -30,13 +30,15 @@ export const api = {
   },
   me: () => req<any>('GET', '/me'),
   stats: (envType?: 'live' | 'sandbox') => req<any>('GET', `/stats${envType ? `?envType=${envType}` : ''}`),
-  payments: (params?: { limit?: number; offset?: number; status?: string; search?: string; envType?: 'live' | 'sandbox' }) => {
+  payments: (params?: { limit?: number; offset?: number; status?: string; search?: string; envType?: 'live' | 'sandbox'; from?: string; to?: string }) => {
     const qs = new URLSearchParams()
     if (params?.limit) qs.set('limit', String(params.limit))
     if (params?.offset) qs.set('offset', String(params.offset))
     if (params?.status && params.status !== 'ALL') qs.set('status', params.status)
     if (params?.search) qs.set('search', params.search)
     if (params?.envType) qs.set('envType', params.envType)
+    if (params?.from) qs.set('from', params.from)
+    if (params?.to) qs.set('to', params.to)
     const q = qs.toString()
     return req<any>('GET', `/payments${q ? `?${q}` : ''}`)
   },
@@ -54,11 +56,13 @@ export const api = {
 
   paymentDetail: (id: string) => req<any>('GET', `/payments/${id}`),
   refundPayment: (id: string, reason?: string) => req<any>('POST', `/payments/${id}/refund`, { reason }),
-  exportPayments: (params?: { status?: string; search?: string; envType?: string }) => {
+  exportPayments: (params?: { status?: string; search?: string; envType?: string; from?: string; to?: string }) => {
     const qs = new URLSearchParams()
     if (params?.status && params.status !== 'ALL') qs.set('status', params.status)
     if (params?.search) qs.set('search', params.search)
     if (params?.envType) qs.set('envType', params.envType)
+    if (params?.from) qs.set('from', params.from)
+    if (params?.to) qs.set('to', params.to)
     const q = qs.toString()
     return fetch(`/admin/portal/payments/export${q ? `?${q}` : ''}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('portalToken')}` }
@@ -73,6 +77,24 @@ export const api = {
   removeTeamMember: (id: string) => req<any>('DELETE', `/team/${id}`),
 
   settlements: () => req<any>('GET', '/settlements'),
+
+  analytics: (params?: { days?: number; envType?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.days) qs.set('days', String(params.days))
+    if (params?.envType) qs.set('envType', params.envType)
+    const q = qs.toString()
+    return req<any>('GET', `/analytics${q ? `?${q}` : ''}`)
+  },
+  customers: (params?: { limit?: number; search?: string; envType?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.limit) qs.set('limit', String(params.limit))
+    if (params?.search) qs.set('search', params.search)
+    if (params?.envType) qs.set('envType', params.envType)
+    const q = qs.toString()
+    return req<any>('GET', `/customers${q ? `?${q}` : ''}`)
+  },
+  auditLogs: (limit?: number) => req<any>('GET', `/audit-logs${limit ? `?limit=${limit}` : ''}`),
+  onboarding: () => req<any>('GET', '/onboarding'),
 
   // Collect
   collectUssd: (body: { phone: string; amount_minor: number; currency?: string; description?: string }) =>

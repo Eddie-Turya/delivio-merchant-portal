@@ -3,9 +3,12 @@ import { Layout } from '../components/Layout'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { useNavigate } from 'react-router-dom'
-import { Search, RefreshCw, FlaskConical, Download } from 'lucide-react'
+import { Search, RefreshCw, FlaskConical, Download, Calendar } from 'lucide-react'
 
 const STATUSES = ['ALL', 'COMPLETED', 'PENDING', 'FAILED', 'REFUNDED']
+
+function today() { return new Date().toISOString().slice(0, 10) }
+function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10) }
 
 function statusBadge(s: string) {
   const map: Record<string, string> = {
@@ -33,11 +36,13 @@ export function PaymentsPage() {
   const navigate = useNavigate()
   const PAGE = 20
   const [exporting, setExporting] = useState(false)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   const doExport = async () => {
     setExporting(true)
     try {
-      const blob = await api.exportPayments({ status, search, envType: mode })
+      const blob = await api.exportPayments({ status, search, envType: mode, from: dateFrom || undefined, to: dateTo || undefined })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -51,7 +56,7 @@ export function PaymentsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.payments({ limit: PAGE, offset: page * PAGE, status, search, envType: mode })
+      const res = await api.payments({ limit: PAGE, offset: page * PAGE, status, search, envType: mode, from: dateFrom || undefined, to: dateTo || undefined })
       setData(res.data)
       setTotal(res.total)
     } catch (err) {
@@ -59,7 +64,7 @@ export function PaymentsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, status, search, mode])
+  }, [page, status, search, mode, dateFrom, dateTo])
 
   useEffect(() => {
     setPage(0)
@@ -124,6 +129,27 @@ export function PaymentsPage() {
                 {s}
               </button>
             ))}
+          </div>
+          {/* Date range */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Calendar size={13} className="text-gray-400" />
+            <input type="date" value={dateFrom} max={dateTo || today()}
+              onChange={e => { setDateFrom(e.target.value); setPage(0) }}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-400 bg-white text-gray-700" />
+            <span className="text-xs text-gray-400">to</span>
+            <input type="date" value={dateTo} min={dateFrom} max={today()}
+              onChange={e => { setDateTo(e.target.value); setPage(0) }}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-400 bg-white text-gray-700" />
+            {(dateFrom || dateTo) && (
+              <button onClick={() => { setDateFrom(''); setDateTo(''); setPage(0) }}
+                className="text-xs text-gray-400 hover:text-gray-700 underline">Clear</button>
+            )}
+            <div className="flex gap-1">
+              {[{l:'Today', f:today(), t:today()},{l:'7d', f:daysAgo(7), t:today()},{l:'30d', f:daysAgo(30), t:today()}].map(({l,f,t}) => (
+                <button key={l} onClick={() => { setDateFrom(f); setDateTo(t); setPage(0) }}
+                  className="px-2 py-1 text-[10px] font-semibold border border-gray-200 rounded-md hover:bg-gray-50 text-gray-500 transition">{l}</button>
+              ))}
+            </div>
           </div>
         </div>
 
