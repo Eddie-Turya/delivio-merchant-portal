@@ -3,7 +3,7 @@ import { Layout } from '../components/Layout'
 import { api } from '../api'
 import {
   User, Building2, Mail, KeyRound, Check, AlertCircle,
-  Clock, Bell, BellOff, Lock,
+  Clock, Bell, BellOff, Lock, ShieldCheck, BadgeCheck, Upload, FileText, Landmark, Smartphone, XCircle,
 } from 'lucide-react'
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -26,6 +26,13 @@ function CardHeader({ icon: Icon, title, badge }: { icon: any; title: string; ba
   )
 }
 
+
+const KYC_DOC_TYPES = [
+  { type: 'IDENTITY', label: 'Identity Document', sub: 'National ID or Passport', icon: User },
+  { type: 'BUSINESS_REG', label: 'Business Registration', sub: 'TIN or BRELA certificate', icon: FileText },
+  { type: 'BANK_ACCOUNT', label: 'Bank Account', sub: 'Statement or letter', icon: Landmark },
+  { type: 'MOBILE_MONEY', label: 'Mobile Money', sub: 'Registered business number', icon: Smartphone },
+]
 
 const NOTIF_OPTIONS = [
   { key: 'payment_completed', label: 'Payment completed', sub: 'Email when a customer pays', default: true },
@@ -51,12 +58,40 @@ export function AccountPage() {
     Object.fromEntries(NOTIF_OPTIONS.map(o => [o.key, o.default]))
   )
 
+  const [kyc, setKyc] = useState<Record<string, any>>({})
+  const [kycLoading, setKycLoading] = useState(true)
+  const [uploading, setUploading] = useState<string | null>(null)
+  const [uploadMsg, setUploadMsg] = useState<{ type: string; ok: boolean; text: string } | null>(null)
+
   useEffect(() => {
     api.me().then((data: any) => {
       setProfile(data)
       setName(data.user?.name || '')
     }).catch(console.error).finally(() => setLoading(false))
+
+    fetch('/admin/portal/kyc', { headers: { Authorization: `Bearer ${localStorage.getItem('portalToken')}` } })
+      .then(r => r.json()).then(d => setKyc(d.documents || {}))
+      .catch(console.error).finally(() => setKycLoading(false))
   }, [])
+
+  const uploadKycDoc = async (type: string, file: File) => {
+    setUploading(type); setUploadMsg(null)
+    const form = new FormData()
+    form.append('file', file)
+    try {
+      const res = await fetch(`/admin/portal/kyc/upload/${type}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('portalToken')}` },
+        body: form,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      setKyc(prev => ({ ...prev, [type]: { status: 'PENDING', uploaded_at: new Date().toISOString() } }))
+      setUploadMsg({ type, ok: true, text: 'Document submitted for review' })
+    } catch (err: any) {
+      setUploadMsg({ type, ok: false, text: err.message })
+    } finally { setUploading(null) }
+  }
 
   const saveName = async () => {
     setSaving(true); setSaveMsg(null)
@@ -183,6 +218,69 @@ export function AccountPage() {
             {/* ── RIGHT COLUMN ── */}
             <div className="space-y-5">
 
+
+              {/* KYC Verification */}
+              <Card>
+                <CardHeader icon={ShieldCheck} title="KYC Verification"
+                  badge={(() => {
+                    const docs = KYC_DOC_TYPES.map(t => kyc[t.type])
+                    const approved = docs.filter(d => d?.status === 'APPROVED').length
+                    const total = KYC_DOC_TYPES.length
+                    const allDone = approved === total
+                    return (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${allDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {approved}/{total} Verified
+                      </span>
+                    )
+                  })()}
+                />
+                {kycLoading ? (
+                  <div className="space-y-3">{[0,1,2,3].map(i => <div key={i} className="h-14 bg-gray-50 rounded-lg animate-pulse" />)}</div>
+                ) : (
+                  <div className="space-y-3">
+                    {KYC_DOC_TYPES.map(({ type, label, sub, icon: Icon }) => {
+                      const doc = kyc[type]
+                      const status = doc?.status
+                      return (
+                        <div key={type} className={`flex items-center gap-3 p-3 rounded-lg border transition ${
+                          status === 'APPROVED' ? 'border-emerald-100 bg-emerald-50/40' :
+                          status === 'REJECTED' ? 'border-red-100 bg-red-50/40' :
+                          status === 'PENDING' ? 'border-amber-100 bg-amber-50/30' :
+                          'border-gray-100 bg-gray-50/60'
+                        }`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            status === 'APPROVED' ? 'bg-emerald-100' : status === 'REJECTED' ? 'bg-red-100' : 'bg-gray-100'
+                          }`}>
+                            <Icon size={15} className={status === 'APPROVED' ? 'text-emerald-600' : status === 'REJECTED' ? 'text-red-500' : 'text-gray-400'} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-900">{label}</p>
+                            <p className="text-[11px] text-gray-400">{doc?.status === 'REJECTED' && doc.notes ? doc.notes : sub}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {status === 'APPROVED' && <BadgeCheck size={16} className="text-emerald-500" />}
+                            {status === 'REJECTED' && <XCircle size={15} className="text-red-400" />}
+                            {status === 'PENDING' && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">PENDING</span>}
+                            {(!status || status === 'REJECTED') && (
+                              <label className={`cursor-pointer flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded border transition ${uploading === type ? 'border-gray-200 text-gray-300' : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'}`}>
+                                {uploading === type ? '…' : <><Upload size={10} /> {status === 'REJECTED' ? 'Re-upload' : 'Upload'}</>}
+                                <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf" disabled={!!uploading}
+                                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadKycDoc(type, f); e.target.value = '' }} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {uploadMsg && (
+                  <p className={`mt-3 text-xs font-medium ${uploadMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {uploadMsg.ok ? <Check size={12} className="inline mr-1" /> : <AlertCircle size={12} className="inline mr-1" />}
+                    {uploadMsg.text}
+                  </p>
+                )}
+              </Card>
 
               {/* Security */}
               <Card>
