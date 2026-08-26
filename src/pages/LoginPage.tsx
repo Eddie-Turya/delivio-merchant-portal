@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle, ArrowLeft } from 'lucide-react'
 import { api } from '../api'
 
 export function LoginPage() {
@@ -27,7 +27,25 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 flex flex-col">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-4">
+        <a
+          href="https://pay.deliviosend.com"
+          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors group"
+        >
+          <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
+          Back to home
+        </a>
+        <a
+          href="https://pay.deliviosend.com#pricing"
+          className="text-sm text-slate-400 hover:text-emerald-400 transition-colors"
+        >
+          View plans
+        </a>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center gap-3 justify-center mb-8">
@@ -99,6 +117,7 @@ export function LoginPage() {
             </button>
           </form>
         </div>
+      </div>
       </div>
     </div>
   )
