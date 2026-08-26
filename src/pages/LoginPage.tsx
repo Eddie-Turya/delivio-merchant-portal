@@ -29,7 +29,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-900/60 backdrop-blur-md">
         <a
           href="https://pay.deliviosend.com"
           className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors group"
