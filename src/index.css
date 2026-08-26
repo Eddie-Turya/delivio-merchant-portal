@@ -9,3 +9,23 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+@media print {
+  /* Hide everything except the invoice document */
+  body > * { display: none !important; }
+  #invoice-print-root { display: block !important; }
+
+  #invoice-print-root {
+    position: fixed;
+    inset: 0;
+    background: white;
+    padding: 32px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #111;
+  }
+
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+}

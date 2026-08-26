@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { ArrowLeft, Copy, ExternalLink, Send, CheckCircle2, Edit2, Trash2, Clock, AlertCircle, Plus, CreditCard, Phone, X } from 'lucide-react'
+import { ArrowLeft, Copy, ExternalLink, Send, CheckCircle2, Edit2, Trash2, Clock, AlertCircle, Plus, CreditCard, Phone, X, Download } from 'lucide-react'
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   DRAFT:    { label: 'Draft',    bg: 'bg-gray-100',    text: 'text-gray-600' },
@@ -13,6 +13,141 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 }
 
 function fmt(n: number, currency = 'TZS') { return `${currency} ${Number(n).toLocaleString()}` }
+
+function PrintableInvoice({ inv, merchant, payments }: { inv: any; merchant: any; payments: any[] }) {
+  const pd = inv.payment_details || {}
+  const hasPD = pd.account_number || pd.mobile_number
+  const paidAmount = Number(inv.paid_amount || 0)
+  const balance = Number(inv.total_amount) - paidAmount
+  const dueDate = inv.due_date ? new Date(inv.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+
+  return (
+    <div style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#111', maxWidth: 700, margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #e5e7eb' }}>
+        <div>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg,#10b981,#0d9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+            <span style={{ color: '#fff', fontWeight: 900, fontSize: 14 }}>D</span>
+          </div>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{merchant.name || 'Delivio Pay'}</div>
+          <div style={{ color: '#6b7280', fontSize: 12 }}>{merchant.slug}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 26, fontWeight: 900, color: '#111' }}>{inv.invoice_number}</div>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>Issued {new Date(inv.created_at).toLocaleDateString()}</div>
+          {dueDate && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>Due {dueDate}</div>}
+          <div style={{ marginTop: 6, display: 'inline-block', padding: '2px 10px', borderRadius: 999, background: inv.status === 'PAID' ? '#d1fae5' : inv.status === 'OVERDUE' ? '#fee2e2' : '#dbeafe', color: inv.status === 'PAID' ? '#065f46' : inv.status === 'OVERDUE' ? '#991b1b' : '#1e40af', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em' }}>{inv.status}</div>
+        </div>
+      </div>
+
+      {/* Bill to */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Bill To</div>
+        <div style={{ fontWeight: 700, fontSize: 14 }}>{inv.customer_name}</div>
+        {inv.customer_email && <div style={{ fontSize: 12, color: '#6b7280' }}>{inv.customer_email}</div>}
+        {inv.customer_phone && <div style={{ fontSize: 12, color: '#6b7280' }}>{inv.customer_phone}</div>}
+      </div>
+
+      {/* Line items */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 13 }}>
+        <thead>
+          <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+            {['Description','Qty','Unit Price','Amount'].map((h, i) => (
+              <th key={h} style={{ padding: '6px 0', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#9ca3af', textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {(inv.line_items || []).map((item: any, i: number) => (
+            <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <td style={{ padding: '8px 0', fontWeight: 500 }}>{item.description}</td>
+              <td style={{ padding: '8px 0', textAlign: 'right', color: '#6b7280' }}>{item.quantity}</td>
+              <td style={{ padding: '8px 0', textAlign: 'right', color: '#6b7280' }}>{inv.currency} {Number(item.unit_price).toLocaleString()}</td>
+              <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 600 }}>{inv.currency} {Math.round(Number(item.unit_price) * Number(item.quantity)).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Totals */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
+        <div style={{ minWidth: 240 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#6b7280', padding: '4px 0' }}>
+            <span>Subtotal</span><span>{inv.currency} {Number(inv.subtotal).toLocaleString()}</span>
+          </div>
+          {Number(inv.tax_rate) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#6b7280', padding: '4px 0' }}>
+              <span>Tax ({inv.tax_rate}%)</span><span>{inv.currency} {Number(inv.tax_amount).toLocaleString()}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 900, padding: '8px 0', borderTop: '2px solid #e5e7eb', marginTop: 4 }}>
+            <span>Total Due</span><span>{inv.currency} {Number(inv.total_amount).toLocaleString()}</span>
+          </div>
+          {paidAmount > 0 && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#10b981', padding: '4px 0' }}>
+                <span>Paid</span><span>- {inv.currency} {paidAmount.toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 900, padding: '8px 0', borderTop: '2px solid #e5e7eb', marginTop: 4 }}>
+                <span>Balance Due</span><span>{inv.currency} {balance.toLocaleString()}</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Payment details */}
+      {hasPD && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Payment Details</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {pd.account_number && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>Bank Transfer</div>
+                {pd.bank_name && <div style={{ fontSize: 12, color: '#374151' }}>{pd.bank_name}</div>}
+                {pd.account_name && <div style={{ fontSize: 12, color: '#374151' }}>{pd.account_name}</div>}
+                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'monospace' }}>{pd.account_number}</div>
+              </div>
+            )}
+            {pd.mobile_number && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>Mobile Money {pd.mobile_provider && `(${pd.mobile_provider})`}</div>
+                {pd.mobile_name && <div style={{ fontSize: 12, color: '#374151' }}>{pd.mobile_name}</div>}
+                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'monospace' }}>{pd.mobile_number}</div>
+              </div>
+            )}
+          </div>
+          {pd.instructions && <div style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic', marginTop: 8 }}>{pd.instructions}</div>}
+        </div>
+      )}
+
+      {/* Notes */}
+      {inv.notes && (
+        <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, marginBottom: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Notes</div>
+          <div style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'pre-wrap' }}>{inv.notes}</div>
+        </div>
+      )}
+
+      {/* Payment history */}
+      {payments.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Payment History</div>
+          {payments.map((p: any) => (
+            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid #f3f4f6' }}>
+              <span>{inv.currency} {Number(p.amount).toLocaleString()}{p.note ? ` — ${p.note}` : ''}</span>
+              <span style={{ color: '#9ca3af' }}>{new Date(p.recorded_at).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ marginTop: 40, paddingTop: 12, borderTop: '1px solid #e5e7eb', fontSize: 11, color: '#9ca3af', textAlign: 'center' }}>
+        Generated by Delivio Pay · pay.deliviosend.com
+      </div>
+    </div>
+  )
+}
 
 function PartialPaymentModal({ inv, onClose, onRecorded }: { inv: any; onClose: () => void; onRecorded: (updated: any) => void }) {
   const balance = Number(inv.total_amount) - Number(inv.paid_amount || 0)
@@ -104,6 +239,13 @@ export function InvoiceDetailPage() {
     navigator.clipboard.writeText(inv.payment_link_url)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const downloadPdf = () => {
+    const title = document.title
+    document.title = inv.invoice_number
+    window.print()
+    document.title = title
   }
 
   const send = async () => {
@@ -199,6 +341,10 @@ export function InvoiceDetailPage() {
               </button>
             </>
           )}
+          <button onClick={downloadPdf} title="Download PDF"
+            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition">
+            <Download size={15} />
+          </button>
         </div>
       </div>
 
@@ -403,6 +549,10 @@ export function InvoiceDetailPage() {
             </div>
           )}
         </div>
+      </div>
+      {/* Hidden print-only invoice — shown fullscreen by @media print */}
+      <div id="invoice-print-root" style={{ display: 'none' }}>
+        <PrintableInvoice inv={inv} merchant={merchant} payments={payments} />
       </div>
     </Layout>
   )
