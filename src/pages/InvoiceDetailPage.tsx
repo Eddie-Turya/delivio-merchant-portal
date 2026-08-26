@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { ArrowLeft, Copy, ExternalLink, Send, CheckCircle2, Edit2, Trash2, Clock, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Copy, ExternalLink, Send, CheckCircle2, Edit2, Trash2, Clock, AlertCircle, Plus, CreditCard, Phone, X } from 'lucide-react'
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   DRAFT:    { label: 'Draft',    bg: 'bg-gray-100',    text: 'text-gray-600' },
@@ -14,20 +14,91 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 
 function fmt(n: number, currency = 'TZS') { return `${currency} ${Number(n).toLocaleString()}` }
 
+function PartialPaymentModal({ inv, onClose, onRecorded }: { inv: any; onClose: () => void; onRecorded: (updated: any) => void }) {
+  const balance = Number(inv.total_amount) - Number(inv.paid_amount || 0)
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  const submit = async () => {
+    const amt = Number(amount)
+    if (!amt || amt <= 0) { setErr('Enter a valid amount'); return }
+    if (amt > balance) { setErr(`Amount exceeds balance of ${fmt(balance, inv.currency)}`); return }
+    setSaving(true)
+    setErr('')
+    try {
+      const updated = await api.recordInvoicePayment(inv.id, { amount: amt, note: note || undefined })
+      onRecorded(updated)
+    } catch (e: any) {
+      setErr(e.message || 'Failed to record payment')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <p className="text-sm font-bold text-gray-900">Record Payment</p>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="bg-blue-50 rounded-lg px-4 py-2.5 flex justify-between items-center">
+            <span className="text-xs font-semibold text-blue-600">Balance Due</span>
+            <span className="text-sm font-black text-blue-700">{fmt(balance, inv.currency)}</span>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Amount Received ({inv.currency})</label>
+            <input type="number" min="1" max={balance} value={amount} onChange={e => setAmount(e.target.value)}
+              placeholder={`e.g. ${Math.round(balance / 2).toLocaleString()}`}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 font-mono" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Note (Optional)</label>
+            <input value={note} onChange={e => setNote(e.target.value)}
+              placeholder="e.g. M-Pesa ref: ABCD1234"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400" />
+          </div>
+          {err && (
+            <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <AlertCircle size={13} /> {err}
+            </div>
+          )}
+          <button onClick={submit} disabled={saving}
+            className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white py-2.5 rounded-lg text-sm font-semibold transition">
+            <CheckCircle2 size={15} /> {saving ? 'Recording…' : 'Record Payment'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function InvoiceDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [inv, setInv] = useState<any>(null)
+  const [payments, setPayments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [acting, setActing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showPayModal, setShowPayModal] = useState(false)
+
+  const loadPayments = useCallback(() => {
+    api.invoicePayments(id!).then((d: any) => setPayments(d.data || [])).catch(() => {})
+  }, [id])
 
   useEffect(() => {
     api.getInvoice(id!)
-      .then(setInv)
+      .then(d => { setInv(d); loadPayments() })
       .catch(() => navigate('/invoices'))
       .finally(() => setLoading(false))
-  }, [id, navigate])
+  }, [id, navigate, loadPayments])
 
   const copyLink = () => {
     navigator.clipboard.writeText(inv.payment_link_url)
@@ -62,9 +133,22 @@ export function InvoiceDetailPage() {
   const cfg = STATUS_CONFIG[inv.status] || STATUS_CONFIG.DRAFT
   const merchant = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
   const dueDate = inv.due_date ? new Date(inv.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+  const paidAmount = Number(inv.paid_amount || 0)
+  const balance = Number(inv.total_amount) - paidAmount
+  const pd = inv.payment_details || {}
+  const hasPD = pd.account_number || pd.mobile_number
+  const hasPartialPayments = paidAmount > 0 && inv.status !== 'PAID'
 
   return (
     <Layout>
+      {showPayModal && (
+        <PartialPaymentModal
+          inv={inv}
+          onClose={() => setShowPayModal(false)}
+          onRecorded={(updated) => { setInv(updated); loadPayments(); setShowPayModal(false) }}
+        />
+      )}
+
       <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/invoices')} className="text-gray-400 hover:text-gray-700 transition">
@@ -105,6 +189,10 @@ export function InvoiceDetailPage() {
                   </a>
                 </>
               )}
+              <button onClick={() => setShowPayModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
+                <Plus size={13} /> Record Payment
+              </button>
               <button onClick={markPaid} disabled={acting}
                 className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white px-3 py-2 rounded-lg text-sm font-semibold transition">
                 <CheckCircle2 size={13} /> Mark Paid
@@ -127,6 +215,20 @@ export function InvoiceDetailPage() {
               <button onClick={copyLink} className="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition whitespace-nowrap">
                 {copied ? <><CheckCircle2 size={12} /> Copied!</> : <><Copy size={12} /> Copy</>}
               </button>
+            </div>
+          )}
+
+          {/* Partial payment progress */}
+          {hasPartialPayments && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-xs font-bold text-amber-700">Partial Payment Received</p>
+                <p className="text-xs text-amber-600">{fmt(paidAmount, inv.currency)} of {fmt(Number(inv.total_amount), inv.currency)}</p>
+              </div>
+              <div className="h-2 bg-amber-100 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${Math.min(100, (paidAmount / Number(inv.total_amount)) * 100)}%` }} />
+              </div>
+              <p className="text-xs text-amber-600 mt-1.5">Balance remaining: <strong>{fmt(balance, inv.currency)}</strong></p>
             </div>
           )}
 
@@ -219,8 +321,53 @@ export function InvoiceDetailPage() {
                   <span>Total Due</span>
                   <span>{fmt(inv.total_amount, inv.currency)}</span>
                 </div>
+                {paidAmount > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm text-emerald-600">
+                      <span>Paid</span>
+                      <span>- {fmt(paidAmount, inv.currency)}</span>
+                    </div>
+                    <div className="flex justify-between text-base font-black text-gray-900 border-t border-gray-200 pt-2">
+                      <span>Balance Due</span>
+                      <span>{fmt(balance, inv.currency)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
+
+            {/* Payment details on invoice */}
+            {hasPD && (
+              <div className="px-6 pb-6">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide mb-3">Payment Details</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {pd.account_number && (
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <CreditCard size={12} className="text-gray-400" />
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Bank Transfer</p>
+                        </div>
+                        {pd.bank_name && <p className="text-xs text-gray-600">{pd.bank_name}</p>}
+                        {pd.account_name && <p className="text-xs text-gray-600">{pd.account_name}</p>}
+                        <p className="text-xs font-mono font-bold text-gray-900">{pd.account_number}</p>
+                      </div>
+                    )}
+                    {pd.mobile_number && (
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <Phone size={12} className="text-gray-400" />
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Mobile Money {pd.mobile_provider && `(${pd.mobile_provider})`}</p>
+                        </div>
+                        {pd.mobile_name && <p className="text-xs text-gray-600">{pd.mobile_name}</p>}
+                        <p className="text-xs font-mono font-bold text-gray-900">{pd.mobile_number}</p>
+                      </div>
+                    )}
+                  </div>
+                  {pd.instructions && <p className="text-xs text-gray-500 italic mt-2">{pd.instructions}</p>}
+                </div>
+              </div>
+            )}
 
             {inv.notes && (
               <div className="px-6 pb-6">
@@ -231,6 +378,30 @@ export function InvoiceDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Payment history */}
+          {payments.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h2 className="text-sm font-bold text-gray-900 mb-4">Payment History</h2>
+              <div className="space-y-2">
+                {payments.map((p: any) => (
+                  <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{fmt(Number(p.amount), inv.currency)}</p>
+                      {p.note && <p className="text-xs text-gray-400 mt-0.5">{p.note}</p>}
+                    </div>
+                    <p className="text-xs text-gray-400">{new Date(p.recorded_at).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+              {['SENT','OVERDUE'].includes(inv.status) && (
+                <button onClick={() => setShowPayModal(true)}
+                  className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition">
+                  <Plus size={13} /> Record Another Payment
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Layout>

@@ -120,4 +120,6 @@ export const api = {
   sendInvoice: (id: string) => req<any>('POST', `/invoices/${id}/send`, {}),
   markInvoicePaid: (id: string) => req<any>('POST', `/invoices/${id}/mark-paid`, {}),
   deleteInvoice: (id: string) => req<any>('DELETE', `/invoices/${id}`),
+  recordInvoicePayment: (id: string, body: { amount: number; note?: string }) => req<any>('POST', `/invoices/${id}/payment`, body),
+  invoicePayments: (id: string) => req<any>('GET', `/invoices/${id}/payments`),
 }
