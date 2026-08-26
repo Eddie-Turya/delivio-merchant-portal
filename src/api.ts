@@ -52,6 +52,7 @@ export const api = {
   updateWebhook: (id: string, patch: { url?: string; events?: string[]; enabled?: boolean }) =>
     req<any>('PATCH', `/webhooks/${id}`, patch),
   deleteWebhook: (id: string) => req<any>('DELETE', `/webhooks/${id}`),
+  rotateWebhookSecret: (id: string) => req<any>('POST', `/webhooks/${id}/rotate-secret`),
 
   updateMe: (patch: { name?: string; currentPassword?: string; newPassword?: string }) =>
     req<any>('PATCH', '/me', patch),

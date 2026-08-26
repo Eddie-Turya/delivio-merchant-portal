@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { Webhook, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, X, ShieldCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle } from 'lucide-react'
+import { Webhook, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, X, ShieldCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 
 const ALL_EVENTS = [
   'payment.completed',
@@ -23,6 +23,7 @@ export function WebhooksPage() {
   const [expandedLogs, setExpandedLogs] = useState<string | null>(null)
   const [logs, setLogs] = useState<Record<string, any[]>>({})
   const [logsLoading, setLogsLoading] = useState<string | null>(null)
+  const [rotating, setRotating] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -66,6 +67,20 @@ export function WebhooksPage() {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const rotateSecret = async (id: string) => {
+    if (!confirm('Rotate the signing secret for this webhook? Your existing secret will stop working immediately.')) return
+    setRotating(id)
+    try {
+      const res = await api.rotateWebhookSecret(id)
+      setNewSecret(res.secret)
+      load()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setRotating(null)
+    }
   }
 
   const toggleLogs = async (id: string) => {
@@ -190,7 +205,20 @@ export function WebhooksPage() {
                         <span key={e} className="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-mono text-gray-600">{e}</span>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">Added {new Date(hook.created_at).toLocaleDateString()}</p>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <ShieldCheck size={11} className="text-gray-400 flex-shrink-0" />
+                      <span className="text-[11px] font-mono text-gray-400">Signing secret: {hook.secret_prefix}</span>
+                      <button
+                        onClick={() => rotateSecret(hook.id)}
+                        disabled={rotating === hook.id}
+                        className="ml-1 flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition font-medium disabled:opacity-50"
+                        title="Rotate signing secret"
+                      >
+                        <RefreshCw size={10} className={rotating === hook.id ? 'animate-spin' : ''} />
+                        Rotate
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Added {new Date(hook.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
