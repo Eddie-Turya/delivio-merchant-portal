@@ -11,18 +11,18 @@ body {
 }
 
 @media print {
+  /* margin: 0 removes the browser's date/time header and URL footer */
+  @page { margin: 0; size: A4; }
+
   body > * { display: none !important; }
   body > #invoice-print-root { display: block !important; }
 
   #invoice-print-root {
-    position: fixed;
-    inset: 0;
+    display: block;
+    width: 100%;
+    padding: 20mm 18mm;
     background: white;
-    padding: 32px;
     font-family: 'Plus Jakarta Sans', sans-serif;
     color: #111;
-    overflow: visible;
   }
-
-  @page { margin: 1cm; size: A4; }
 }
