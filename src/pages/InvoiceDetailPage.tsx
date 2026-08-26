@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
@@ -550,10 +551,13 @@ export function InvoiceDetailPage() {
           )}
         </div>
       </div>
-      {/* Hidden print-only invoice — shown fullscreen by @media print */}
-      <div id="invoice-print-root" style={{ display: 'none' }}>
-        <PrintableInvoice inv={inv} merchant={merchant} payments={payments} />
-      </div>
+      {/* Portalled to document.body so @media print body > * can reveal it */}
+      {createPortal(
+        <div id="invoice-print-root" style={{ display: 'none' }}>
+          <PrintableInvoice inv={inv} merchant={merchant} payments={payments} />
+        </div>,
+        document.body
+      )}
     </Layout>
   )
 }

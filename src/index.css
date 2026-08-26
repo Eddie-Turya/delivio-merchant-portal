@@ -11,9 +11,8 @@ body {
 }
 
 @media print {
-  /* Hide everything except the invoice document */
   body > * { display: none !important; }
-  #invoice-print-root { display: block !important; }
+  body > #invoice-print-root { display: block !important; }
 
   #invoice-print-root {
     position: fixed;
@@ -22,10 +21,8 @@ body {
     padding: 32px;
     font-family: 'Plus Jakarta Sans', sans-serif;
     color: #111;
+    overflow: visible;
   }
 
-  @page {
-    margin: 1cm;
-    size: A4;
-  }
+  @page { margin: 1cm; size: A4; }
 }
