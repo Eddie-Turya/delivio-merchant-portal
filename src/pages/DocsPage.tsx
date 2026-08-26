@@ -475,7 +475,36 @@ Content-Type: application/json`} />
   }
 }`} />
 
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-8 mb-3">Verifying signatures</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-8 mb-3">Signing secret</h3>
+              <p className="text-gray-500 text-sm leading-relaxed mb-4">
+                When you create a webhook, a signing secret (<code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">whsec_...</code>) is generated and shown <strong className="text-gray-800 font-semibold">once</strong>.
+                Store it securely — subsequent API responses only return the first 14 characters (<code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">secret_prefix</code>) so you can identify which secret is active without exposing it.
+              </p>
+              <div className="mb-6">
+                <Callout type="warning">
+                  The full secret is shown <strong>only at creation time</strong>. If you lose it, rotate the secret from the Webhooks page — the old secret is invalidated immediately.
+                </Callout>
+              </div>
+
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Rotating a secret</h3>
+              <p className="text-gray-500 text-sm leading-relaxed mb-4">
+                Rotate your webhook secret if it is ever compromised or as part of regular key hygiene. The endpoint generates a new secret and invalidates the previous one immediately.
+              </p>
+              <CodeBlock id="webhook-rotate" lang="bash" code={`curl -X POST https://pay.deliviosend.com/admin/portal/webhooks/{id}/rotate-secret \\
+  -H "Authorization: Bearer <portal_jwt>"`} />
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-6 mb-3">Rotation response</h3>
+              <CodeBlock id="webhook-rotate-response" lang="json" code={`{
+  "secret": "whsec_newKeyValue...",
+  "secret_prefix": "whsec_newKeyVa...",
+  "rotatedAt": "2026-08-26T12:00:00.000Z"
+}`} />
+              <div className="mt-4 mb-8">
+                <Callout type="tip">
+                  Update your server with the new secret <strong>before</strong> rotating — the old secret stops working the moment rotation completes.
+                </Callout>
+              </div>
+
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Verifying signatures</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-4">
                 Each webhook includes an <code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">X-Delivio-Signature</code> header — HMAC-SHA256 of the raw request body signed with your webhook secret.
                 Always verify this before processing.
