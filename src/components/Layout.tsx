@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Users, BarChart2, UserCheck, Shield, HelpCircle } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Users, BarChart2, UserCheck, Shield, HelpCircle, FileText } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { useIdleTimeout } from '../hooks/useIdleTimeout'
@@ -8,6 +8,7 @@ import { useIdleTimeout } from '../hooks/useIdleTimeout'
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/invoices', icon: FileText, label: 'Invoices' },
   { to: '/collect', icon: Link2, label: 'Collect' },
   { to: '/payment-links', icon: Link2, label: 'Payment Links' },
   { to: '/bulk', icon: Rows3, label: 'Bulk', soon: true },

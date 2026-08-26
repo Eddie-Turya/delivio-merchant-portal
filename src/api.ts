@@ -105,4 +105,19 @@ export const api = {
   collectStatus: (paymentId: string) => req<any>('GET', `/collect/status/${paymentId}`),
   createPaymentLink: (body: { amount_minor: number; currency?: string; description?: string; expires_in_hours?: number }) =>
     req<any>('POST', '/collect/link', body),
+
+  // Invoices
+  invoices: (params?: { status?: string; search?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.status && params.status !== 'ALL') qs.set('status', params.status)
+    if (params?.search) qs.set('search', params.search)
+    const q = qs.toString()
+    return req<any>('GET', `/invoices${q ? `?${q}` : ''}`)
+  },
+  createInvoice: (body: any) => req<any>('POST', '/invoices', body),
+  getInvoice: (id: string) => req<any>('GET', `/invoices/${id}`),
+  updateInvoice: (id: string, body: any) => req<any>('PATCH', `/invoices/${id}`, body),
+  sendInvoice: (id: string) => req<any>('POST', `/invoices/${id}/send`, {}),
+  markInvoicePaid: (id: string) => req<any>('POST', `/invoices/${id}/mark-paid`, {}),
+  deleteInvoice: (id: string) => req<any>('DELETE', `/invoices/${id}`),
 }

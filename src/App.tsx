@@ -17,6 +17,9 @@ import { AnalyticsPage } from './pages/AnalyticsPage'
 import { CustomersPage } from './pages/CustomersPage'
 import { AuditLogPage } from './pages/AuditLogPage'
 import { SupportPage } from './pages/SupportPage'
+import { InvoicesPage } from './pages/InvoicesPage'
+import { InvoiceFormPage } from './pages/InvoiceFormPage'
+import { InvoiceDetailPage } from './pages/InvoiceDetailPage'
 import { EnvProvider } from './context/EnvContext'
 import { api } from './api'
 
@@ -47,6 +50,10 @@ export default function App() {
         <Route path="/customers" element={<Guard><CustomersPage /></Guard>} />
         <Route path="/audit" element={<Guard><AuditLogPage /></Guard>} />
         <Route path="/support" element={<Guard><SupportPage /></Guard>} />
+        <Route path="/invoices" element={<Guard><InvoicesPage /></Guard>} />
+        <Route path="/invoices/new" element={<Guard><InvoiceFormPage /></Guard>} />
+        <Route path="/invoices/:id" element={<Guard><InvoiceDetailPage /></Guard>} />
+        <Route path="/invoices/:id/edit" element={<Guard><InvoiceFormPage /></Guard>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
