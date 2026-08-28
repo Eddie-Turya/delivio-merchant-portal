@@ -1,4 +1,4 @@
-const BASE = '/admin/portal'
+const BASE = '/portal'
 
 function getToken() { return localStorage.getItem('portalToken') }
 function setToken(t: string) { localStorage.setItem('portalToken', t) }
@@ -68,7 +68,7 @@ export const api = {
     if (params?.from) qs.set('from', params.from)
     if (params?.to) qs.set('to', params.to)
     const q = qs.toString()
-    return fetch(`/admin/portal/payments/export${q ? `?${q}` : ''}`, {
+    return fetch(`/portal/payments/export${q ? `?${q}` : ''}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('portalToken')}` }
     }).then(r => r.blob())
   },
