@@ -62,6 +62,7 @@ export function AccountPage() {
   const [kycLoading, setKycLoading] = useState(true)
 
   const [feeSettings, setFeeSettings] = useState<{ platform_rate_percent: number; fee_bearer: 'merchant' | 'customer' } | null>(null)
+  const [selectedBearer, setSelectedBearer] = useState<'merchant' | 'customer' | null>(null)
   const [feeUpdating, setFeeUpdating] = useState(false)
   const [feeMsg, setFeeMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [uploading, setUploading] = useState<string | null>(null)
@@ -343,39 +344,50 @@ export function AccountPage() {
                     <div>
                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Who pays the fee?</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {(['merchant', 'customer'] as const).map(option => (
-                          <button
-                            key={option}
-                            onClick={async () => {
-                              if (feeUpdating || feeSettings.fee_bearer === option) return
-                              setFeeUpdating(true); setFeeMsg(null)
-                              try {
-                                await api.updateFeeBearer(option)
-                                setFeeSettings(prev => prev ? { ...prev, fee_bearer: option } : prev)
-                                setFeeMsg({ ok: true, text: 'Preference saved' })
-                              } catch {
-                                setFeeMsg({ ok: false, text: 'Failed to save' })
-                              } finally {
-                                setFeeUpdating(false)
-                              }
-                            }}
-                            className={`rounded-lg border px-3 py-3 text-left transition ${
-                              feeSettings.fee_bearer === option
-                                ? 'bg-emerald-50 border-emerald-400'
-                                : 'border-gray-200 hover:bg-gray-50'
-                            }`}
-                          >
-                            <p className={`text-xs font-bold capitalize ${feeSettings.fee_bearer === option ? 'text-emerald-700' : 'text-gray-700'}`}>
-                              {option === 'merchant' ? 'My business' : 'Customer'}
-                            </p>
-                            <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
-                              {option === 'merchant'
-                                ? `Fee deducted from payout. Customer pays stated amount.`
-                                : `Fee added to customer charge. You receive full amount.`}
-                            </p>
-                          </button>
-                        ))}
+                        {(['merchant', 'customer'] as const).map(option => {
+                          const active = (selectedBearer ?? feeSettings.fee_bearer) === option
+                          return (
+                            <button
+                              key={option}
+                              onClick={() => { setSelectedBearer(option); setFeeMsg(null) }}
+                              className={`rounded-lg border px-3 py-3 text-left transition ${
+                                active ? 'bg-emerald-50 border-emerald-400' : 'border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              <p className={`text-xs font-bold capitalize ${active ? 'text-emerald-700' : 'text-gray-700'}`}>
+                                {option === 'merchant' ? 'My business' : 'Customer'}
+                              </p>
+                              <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
+                                {option === 'merchant'
+                                  ? 'Fee deducted from payout. Customer pays stated amount.'
+                                  : 'Fee added to customer charge. You receive full amount.'}
+                              </p>
+                            </button>
+                          )
+                        })}
                       </div>
+                      {selectedBearer && selectedBearer !== feeSettings.fee_bearer && (
+                        <button
+                          onClick={async () => {
+                            if (!selectedBearer || feeUpdating) return
+                            setFeeUpdating(true); setFeeMsg(null)
+                            try {
+                              await api.updateFeeBearer(selectedBearer)
+                              setFeeSettings(prev => prev ? { ...prev, fee_bearer: selectedBearer } : prev)
+                              setSelectedBearer(null)
+                              setFeeMsg({ ok: true, text: 'Preference saved' })
+                            } catch {
+                              setFeeMsg({ ok: false, text: 'Failed to save' })
+                            } finally {
+                              setFeeUpdating(false)
+                            }
+                          }}
+                          disabled={feeUpdating}
+                          className="mt-3 w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-lg transition"
+                        >
+                          {feeUpdating ? 'Saving…' : 'Save preference'}
+                        </button>
+                      )}
                     </div>
                     {feeMsg && (
                       <p className={`text-xs font-medium ${feeMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>{feeMsg.text}</p>
