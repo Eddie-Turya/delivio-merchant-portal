@@ -167,6 +167,78 @@ export function AccountPage() {
                 </div>
               </Card>
 
+              {/* Collection fee */}
+              <Card>
+                <CardHeader icon={Percent} title="Collection fee" />
+                {feeSettings ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform rate</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-0.5">{feeSettings.platform_rate_percent}%</p>
+                      </div>
+                      <p className="text-xs text-gray-400 max-w-[180px] text-right">Set by the platform. Applied to every payment.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Who pays the fee?</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['merchant', 'customer'] as const).map(option => {
+                          const active = (selectedBearer ?? feeSettings.fee_bearer) === option
+                          return (
+                            <button
+                              key={option}
+                              onClick={() => { setSelectedBearer(option); setFeeMsg(null) }}
+                              className={`rounded-lg border px-3 py-3 text-left transition ${
+                                active ? 'bg-emerald-50 border-emerald-400' : 'border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              <p className={`text-xs font-bold capitalize ${active ? 'text-emerald-700' : 'text-gray-700'}`}>
+                                {option === 'merchant' ? 'My business' : 'Customer'}
+                              </p>
+                              <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
+                                {option === 'merchant'
+                                  ? 'Fee deducted from payout. Customer pays stated amount.'
+                                  : 'Fee added to customer charge. You receive full amount.'}
+                              </p>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {selectedBearer && selectedBearer !== feeSettings.fee_bearer && (
+                        <button
+                          onClick={async () => {
+                            if (!selectedBearer || feeUpdating) return
+                            setFeeUpdating(true); setFeeMsg(null)
+                            try {
+                              await api.updateFeeBearer(selectedBearer)
+                              setFeeSettings(prev => prev ? { ...prev, fee_bearer: selectedBearer } : prev)
+                              setSelectedBearer(null)
+                              setFeeMsg({ ok: true, text: 'Preference saved' })
+                            } catch {
+                              setFeeMsg({ ok: false, text: 'Failed to save' })
+                            } finally {
+                              setFeeUpdating(false)
+                            }
+                          }}
+                          disabled={feeUpdating}
+                          className="mt-3 w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-lg transition"
+                        >
+                          {feeUpdating ? 'Saving…' : 'Save preference'}
+                        </button>
+                      )}
+                    </div>
+                    {feeMsg && (
+                      <p className={`text-xs font-medium ${feeMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>{feeMsg.text}</p>
+                    )}
+                    <p className="text-[11px] text-gray-400">
+                      Example at {feeSettings.platform_rate_percent}%: on 10,000 TZS the fee is {Math.ceil(10000 * feeSettings.platform_rate_percent / 100).toLocaleString()} TZS
+                    </p>
+                  </div>
+                ) : (
+                  <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
+                )}
+              </Card>
+
               {/* Profile */}
               <Card>
                 <CardHeader icon={User} title="Profile" />
@@ -327,78 +399,6 @@ export function AccountPage() {
                     <Clock size={14} className="text-gray-300" />
                   </div>
                 </div>
-              </Card>
-
-              {/* Collection fee */}
-              <Card>
-                <CardHeader icon={Percent} title="Collection fee" />
-                {feeSettings ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
-                      <div>
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform rate</p>
-                        <p className="text-2xl font-bold text-gray-900 mt-0.5">{feeSettings.platform_rate_percent}%</p>
-                      </div>
-                      <p className="text-xs text-gray-400 max-w-[180px] text-right">Set by the platform. Applied to every payment.</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Who pays the fee?</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(['merchant', 'customer'] as const).map(option => {
-                          const active = (selectedBearer ?? feeSettings.fee_bearer) === option
-                          return (
-                            <button
-                              key={option}
-                              onClick={() => { setSelectedBearer(option); setFeeMsg(null) }}
-                              className={`rounded-lg border px-3 py-3 text-left transition ${
-                                active ? 'bg-emerald-50 border-emerald-400' : 'border-gray-200 hover:bg-gray-50'
-                              }`}
-                            >
-                              <p className={`text-xs font-bold capitalize ${active ? 'text-emerald-700' : 'text-gray-700'}`}>
-                                {option === 'merchant' ? 'My business' : 'Customer'}
-                              </p>
-                              <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
-                                {option === 'merchant'
-                                  ? 'Fee deducted from payout. Customer pays stated amount.'
-                                  : 'Fee added to customer charge. You receive full amount.'}
-                              </p>
-                            </button>
-                          )
-                        })}
-                      </div>
-                      {selectedBearer && selectedBearer !== feeSettings.fee_bearer && (
-                        <button
-                          onClick={async () => {
-                            if (!selectedBearer || feeUpdating) return
-                            setFeeUpdating(true); setFeeMsg(null)
-                            try {
-                              await api.updateFeeBearer(selectedBearer)
-                              setFeeSettings(prev => prev ? { ...prev, fee_bearer: selectedBearer } : prev)
-                              setSelectedBearer(null)
-                              setFeeMsg({ ok: true, text: 'Preference saved' })
-                            } catch {
-                              setFeeMsg({ ok: false, text: 'Failed to save' })
-                            } finally {
-                              setFeeUpdating(false)
-                            }
-                          }}
-                          disabled={feeUpdating}
-                          className="mt-3 w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-lg transition"
-                        >
-                          {feeUpdating ? 'Saving…' : 'Save preference'}
-                        </button>
-                      )}
-                    </div>
-                    {feeMsg && (
-                      <p className={`text-xs font-medium ${feeMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>{feeMsg.text}</p>
-                    )}
-                    <p className="text-[11px] text-gray-400">
-                      Example at {feeSettings.platform_rate_percent}%: on 10,000 TZS the fee is {Math.ceil(10000 * feeSettings.platform_rate_percent / 100).toLocaleString()} TZS
-                    </p>
-                  </div>
-                ) : (
-                  <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
-                )}
               </Card>
 
               {/* Notification preferences */}
