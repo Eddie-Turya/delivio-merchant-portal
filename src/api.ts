@@ -127,4 +127,11 @@ export const api = {
   deleteInvoice: (id: string) => req<any>('DELETE', `/invoices/${id}`),
   recordInvoicePayment: (id: string, body: { amount: number; note?: string }) => req<any>('POST', `/invoices/${id}/payment`, body),
   invoicePayments: (id: string) => req<any>('GET', `/invoices/${id}/payments`),
+
+  // Bill Splits
+  createBillSplit: (body: { title: string; description?: string; currency?: string; participants: { name: string; phone: string; amount_minor: number }[] }) =>
+    req<any>('POST', '/bill-splits', body),
+  listBillSplits: () => req<any>('GET', '/bill-splits'),
+  getBillSplit: (id: string) => req<any>('GET', `/bill-splits/${id}`),
+  cancelBillSplit: (id: string) => req<any>('POST', `/bill-splits/${id}/cancel`, {}),
 }

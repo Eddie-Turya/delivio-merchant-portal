@@ -9,6 +9,7 @@ const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/invoices', icon: FileText, label: 'Invoices' },
+  { to: '/bill-splits', icon: Users, label: 'Bill Splits' },
   { to: '/collect', icon: Link2, label: 'Collect' },
   { to: '/payment-links', icon: Link2, label: 'Payment Links' },
   { to: '/bulk', icon: Rows3, label: 'Bulk', soon: true },

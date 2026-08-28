@@ -20,6 +20,7 @@ import { SupportPage } from './pages/SupportPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { InvoiceFormPage } from './pages/InvoiceFormPage'
 import { InvoiceDetailPage } from './pages/InvoiceDetailPage'
+import BillSplitPage from './pages/BillSplitPage'
 import { EnvProvider } from './context/EnvContext'
 import { api } from './api'
 
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/invoices" element={<Guard><InvoicesPage /></Guard>} />
         <Route path="/invoices/new" element={<Guard><InvoiceFormPage /></Guard>} />
         <Route path="/invoices/:id" element={<Guard><InvoiceDetailPage /></Guard>} />
+        <Route path="/bill-splits" element={<Guard><BillSplitPage /></Guard>} />
         <Route path="/invoices/:id/edit" element={<Guard><InvoiceFormPage /></Guard>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
