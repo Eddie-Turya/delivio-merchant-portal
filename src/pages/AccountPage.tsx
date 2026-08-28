@@ -3,7 +3,7 @@ import { Layout } from '../components/Layout'
 import { api } from '../api'
 import {
   User, Building2, Mail, KeyRound, Check, AlertCircle,
-  Clock, Bell, BellOff, Lock, ShieldCheck, BadgeCheck, Upload, FileText, Landmark, Smartphone, XCircle,
+  Clock, Bell, BellOff, Lock, ShieldCheck, BadgeCheck, Upload, FileText, Landmark, Smartphone, XCircle, Percent,
 } from 'lucide-react'
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -60,6 +60,10 @@ export function AccountPage() {
 
   const [kyc, setKyc] = useState<Record<string, any>>({})
   const [kycLoading, setKycLoading] = useState(true)
+
+  const [feeSettings, setFeeSettings] = useState<{ platform_rate_percent: number; fee_bearer: 'merchant' | 'customer' } | null>(null)
+  const [feeUpdating, setFeeUpdating] = useState(false)
+  const [feeMsg, setFeeMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [uploading, setUploading] = useState<string | null>(null)
   const [uploadMsg, setUploadMsg] = useState<{ type: string; ok: boolean; text: string } | null>(null)
 
@@ -72,6 +76,8 @@ export function AccountPage() {
     fetch('/admin/portal/kyc', { headers: { Authorization: `Bearer ${localStorage.getItem('portalToken')}` } })
       .then(r => r.json()).then(d => setKyc(d.documents || {}))
       .catch(console.error).finally(() => setKycLoading(false))
+
+    api.getFeeSettings().then(setFeeSettings).catch(console.error)
   }, [])
 
   const uploadKycDoc = async (type: string, file: File) => {
@@ -320,6 +326,67 @@ export function AccountPage() {
                     <Clock size={14} className="text-gray-300" />
                   </div>
                 </div>
+              </Card>
+
+              {/* Collection fee */}
+              <Card>
+                <CardHeader icon={Percent} title="Collection fee" />
+                {feeSettings ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform rate</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-0.5">{feeSettings.platform_rate_percent}%</p>
+                      </div>
+                      <p className="text-xs text-gray-400 max-w-[180px] text-right">Set by the platform. Applied to every payment.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Who pays the fee?</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['merchant', 'customer'] as const).map(option => (
+                          <button
+                            key={option}
+                            onClick={async () => {
+                              if (feeUpdating || feeSettings.fee_bearer === option) return
+                              setFeeUpdating(true); setFeeMsg(null)
+                              try {
+                                await api.updateFeeBearer(option)
+                                setFeeSettings(prev => prev ? { ...prev, fee_bearer: option } : prev)
+                                setFeeMsg({ ok: true, text: 'Preference saved' })
+                              } catch {
+                                setFeeMsg({ ok: false, text: 'Failed to save' })
+                              } finally {
+                                setFeeUpdating(false)
+                              }
+                            }}
+                            className={`rounded-lg border px-3 py-3 text-left transition ${
+                              feeSettings.fee_bearer === option
+                                ? 'bg-emerald-50 border-emerald-400'
+                                : 'border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <p className={`text-xs font-bold capitalize ${feeSettings.fee_bearer === option ? 'text-emerald-700' : 'text-gray-700'}`}>
+                              {option === 'merchant' ? 'My business' : 'Customer'}
+                            </p>
+                            <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
+                              {option === 'merchant'
+                                ? `Fee deducted from payout. Customer pays stated amount.`
+                                : `Fee added to customer charge. You receive full amount.`}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {feeMsg && (
+                      <p className={`text-xs font-medium ${feeMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>{feeMsg.text}</p>
+                    )}
+                    <p className="text-[11px] text-gray-400">
+                      Example at {feeSettings.platform_rate_percent}%: on 10,000 TZS the fee is {Math.ceil(10000 * feeSettings.platform_rate_percent / 100).toLocaleString()} TZS
+                    </p>
+                  </div>
+                ) : (
+                  <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
+                )}
               </Card>
 
               {/* Notification preferences */}

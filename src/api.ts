@@ -107,6 +107,10 @@ export const api = {
   createPaymentLink: (body: { amount_minor: number; currency?: string; description?: string; expires_in_hours?: number }) =>
     req<any>('POST', '/collect/link', body),
 
+  // Fee settings
+  getFeeSettings: () => req<any>('GET', '/settings/fee'),
+  updateFeeBearer: (fee_bearer: 'merchant' | 'customer') => req<any>('PATCH', '/settings/fee', { fee_bearer }),
+
   // Invoices
   invoices: (params?: { status?: string; search?: string }) => {
     const qs = new URLSearchParams()
