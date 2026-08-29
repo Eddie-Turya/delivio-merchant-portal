@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import { useEnv } from '../context/EnvContext'
 import { Layout } from '../components/Layout'
 import { Users, Plus, X, ChevronDown, RefreshCw, CheckCircle, Clock, XCircle, Loader2, Trash2, Copy, QrCode, ExternalLink } from 'lucide-react'
 
@@ -50,6 +51,7 @@ interface Participant { name: string; phone: string; amount_minor: number }
 type View = 'list' | 'create' | 'detail'
 
 export default function BillSplitPage() {
+  const { mode } = useEnv()
   const [view, setView] = useState<View>('list')
   const [splits, setSplits] = useState<any[]>([])
   const [detail, setDetail] = useState<any | null>(null)
@@ -102,7 +104,7 @@ export default function BillSplitPage() {
     }
     setCreating(true)
     try {
-      const result = await api.createBillSplit({ title, description, participants })
+      const result = await api.createBillSplit({ title, description, participants, envType: mode })
       const created = result.data || result
       setTitle(''); setDescription('')
       setParticipants([{ name: '', phone: '', amount_minor: 0 }, { name: '', phone: '', amount_minor: 0 }])

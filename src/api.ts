@@ -129,7 +129,7 @@ export const api = {
   invoicePayments: (id: string) => req<any>('GET', `/invoices/${id}/payments`),
 
   // Bill Splits
-  createBillSplit: (body: { title: string; description?: string; currency?: string; participants: { name: string; phone: string; amount_minor: number }[] }) =>
+  createBillSplit: (body: { title: string; description?: string; currency?: string; participants: { name: string; phone: string; amount_minor: number }[]; envType?: 'live' | 'sandbox' }) =>
     req<any>('POST', '/bill-splits', body),
   listBillSplits: () => req<any>('GET', '/bill-splits'),
   getBillSplit: (id: string) => req<any>('GET', `/bill-splits/${id}`),
