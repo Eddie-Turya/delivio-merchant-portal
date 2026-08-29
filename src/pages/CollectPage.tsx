@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
+import { useEnv } from '../context/EnvContext'
 import { Smartphone, Link2, CheckCircle2, XCircle, Loader2, Copy, Check, Clock } from 'lucide-react'
 
 function formatTZS(minor: number) {
@@ -12,6 +13,7 @@ function formatTZS(minor: number) {
 type UssdState = 'idle' | 'loading' | 'pending' | 'success' | 'failed'
 
 function UssdCard() {
+  const { mode } = useEnv()
   const [phone, setPhone] = useState('')
   const [amount, setAmount] = useState('')
   const [desc, setDesc] = useState('')
@@ -34,7 +36,7 @@ function UssdCard() {
     stopPoll()
 
     try {
-      const res = await api.collectUssd({ phone: phone.trim(), amount_minor: amountMinor, description: desc || undefined })
+      const res = await api.collectUssd({ phone: phone.trim(), amount_minor: amountMinor, description: desc || undefined, envType: mode })
       const paymentId = res.payment_id
 
       setState('pending')
@@ -200,6 +202,7 @@ function UssdCard() {
 // ── Payment Link Card ─────────────────────────────────────────────────────────
 
 function LinkCard() {
+  const { mode } = useEnv()
   const [amount, setAmount] = useState('')
   const [desc, setDesc] = useState('')
   const [expires, setExpires] = useState('24')
@@ -219,6 +222,7 @@ function LinkCard() {
         amount_minor: amountMinor,
         description: desc || undefined,
         expires_in_hours: parseInt(expires),
+        envType: mode,
       })
       setResult(res)
     } catch (e: any) {

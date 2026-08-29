@@ -101,10 +101,10 @@ export const api = {
   onboarding: () => req<any>('GET', '/onboarding'),
 
   // Collect
-  collectUssd: (body: { phone: string; amount_minor: number; currency?: string; description?: string }) =>
+  collectUssd: (body: { phone: string; amount_minor: number; currency?: string; description?: string; envType?: 'live' | 'sandbox' }) =>
     req<any>('POST', '/collect/ussd', body),
   collectStatus: (paymentId: string) => req<any>('GET', `/collect/status/${paymentId}`),
-  createPaymentLink: (body: { amount_minor: number; currency?: string; description?: string; expires_in_hours?: number }) =>
+  createPaymentLink: (body: { amount_minor: number; currency?: string; description?: string; expires_in_hours?: number; envType?: 'live' | 'sandbox' }) =>
     req<any>('POST', '/collect/link', body),
 
   // Fee settings
