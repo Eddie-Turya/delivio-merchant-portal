@@ -49,7 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Zap size={16} className="text-white" />
         </div>
         <div>
-          <p className="text-sm font-bold text-white leading-tight">Delivio Pay</p>
+          <p className="text-sm font-bold text-white leading-tight">Yalla Pay</p>
           <p className="text-[11px] text-slate-500 font-medium">Merchant Portal</p>
         </div>
       </div>
@@ -192,7 +192,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
               <Zap size={12} className="text-white" />
             </div>
-            <span className="text-sm font-bold text-white">Delivio Pay</span>
+            <span className="text-sm font-bold text-white">Yalla Pay</span>
           </div>
         </div>
 

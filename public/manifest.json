@@ -1,7 +1,7 @@
 {
-  "name": "Delivio Pay — Merchant Portal",
-  "short_name": "Delivio Pay",
-  "description": "Manage your Delivio Pay merchant account",
+  "name": "Yalla Pay — Merchant Portal",
+  "short_name": "Yalla Pay",
+  "description": "Manage your Yalla Pay merchant account",
   "start_url": "/portal/",
   "scope": "/portal/",
   "display": "standalone",

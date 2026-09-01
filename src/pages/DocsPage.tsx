@@ -208,7 +208,7 @@ export function DocsPage() {
           </div>
           <div>
             <h1 className="text-base font-bold text-gray-900">API Reference</h1>
-            <p className="text-xs text-gray-400 hidden sm:block">Delivio Pay · REST API</p>
+            <p className="text-xs text-gray-400 hidden sm:block">Yalla Pay · REST API</p>
           </div>
         </div>
         {/* Mobile nav toggle */}
@@ -244,7 +244,7 @@ export function DocsPage() {
                   <Zap size={11} />
                   REST API v1
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">Delivio Pay API</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-3">Yalla Pay API</h1>
                 <p className="text-base text-gray-500 leading-relaxed">
                   Accept mobile money payments — M-Pesa, Tigo Pesa, Airtel Money, and Halopesa — directly from your app or backend.
                   The API is RESTful, returns JSON, and uses Bearer token authentication.
@@ -441,7 +441,7 @@ Content-Type: application/json`} />
                 Webhooks
               </SectionHeading>
               <p className="text-gray-500 leading-relaxed mb-6">
-                Delivio Pay sends <code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">HTTPS POST</code> requests to your endpoint when payment events occur.
+                Yalla Pay sends <code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">HTTPS POST</code> requests to your endpoint when payment events occur.
                 Configure your webhook URL from the Webhooks page in this portal.
               </p>
 
