@@ -146,7 +146,7 @@ export default function BillSplitPage() {
 
   return (
     <Layout>
-    <div className="p-4 sm:p-6 space-y-5 max-w-4xl">
+    <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -214,18 +214,25 @@ export default function BillSplitPage() {
                       className="flex-1 min-w-[100px] text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                     <input value={p.phone} onChange={e => update(i, 'phone', e.target.value)} placeholder="0712345678"
                       className="flex-1 min-w-[110px] text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => toggleShareType(i)}
-                        className={`text-[10px] font-bold px-2 py-1.5 rounded border transition flex-shrink-0 ${isPercent ? 'bg-violet-100 border-violet-300 text-violet-700' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>
-                        {isPercent ? '%' : 'TZS'}
-                      </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {/* Toggle pill: TZS ↔ % */}
+                      <div className="flex items-center bg-gray-100 rounded-lg p-0.5 border border-gray-200 gap-0.5">
+                        <button onClick={() => !isPercent || toggleShareType(i)}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition ${!isPercent ? 'bg-white shadow-sm text-gray-800 border border-gray-200' : 'text-gray-400 hover:text-gray-600'}`}>
+                          TZS
+                        </button>
+                        <button onClick={() => isPercent || toggleShareType(i)}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition ${isPercent ? 'bg-violet-500 shadow-sm text-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                          %
+                        </button>
+                      </div>
                       <input type="number" min={0} max={isPercent ? 100 : undefined}
                         placeholder={isPercent ? '0' : '0.00'}
                         value={p.share_value || ''}
                         onChange={e => update(i, 'share_value', Number(e.target.value))}
-                        className="w-20 text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 tabular-nums" />
+                        className="w-24 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 tabular-nums" />
                       {isPercent && resolvedAmt > 0 && (
-                        <span className="text-[10px] text-gray-400 whitespace-nowrap">{fmt(resolvedAmt)}</span>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap tabular-nums">= {fmt(resolvedAmt)}</span>
                       )}
                     </div>
                     {participants.length > 2 && (
