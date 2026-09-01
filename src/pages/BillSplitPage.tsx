@@ -103,12 +103,18 @@ export default function BillSplitPage() {
     setParticipants(p => p.map((x, idx) => idx === i ? { ...x, share_type: x.share_type === 'fixed' ? 'percentage' : 'fixed', share_value: 0 } : x))
 
   const totalSumMinor = participants.reduce((s, p) => s + resolveAmountMinor(p), 0)
+  const totalPct = participants.reduce((s, p) => s + (p.share_type === 'percentage' ? Number(p.share_value) || 0 : 0), 0)
+  const pctShortfall = hasPercentage ? Math.round((100 - totalPct) * 10) / 10 : 0
 
   const handleCreate = async () => {
     setCreateError('')
     if (!title.trim()) { setCreateError('Title is required'); return }
     if (participants.length < 2) { setCreateError('At least 2 participants required'); return }
     if (hasPercentage && !totalAmountMinor) { setCreateError('Enter total bill amount to use percentage shares'); return }
+    if (hasPercentage && totalPct !== 100) {
+      setCreateError(`Percentages must add up to 100% — currently ${totalPct}%`)
+      return
+    }
     for (const p of participants) {
       if (!p.name.trim() || !p.phone.trim()) { setCreateError('All participants need name and phone'); return }
       const amt = resolveAmountMinor(p)
@@ -242,7 +248,25 @@ export default function BillSplitPage() {
                 )
               })}
             </div>
-            {totalSumMinor > 0 && (
+            {hasPercentage && (
+              <div className={`mt-3 flex items-center gap-3 px-3 py-2 rounded-lg border text-xs font-semibold tabular-nums ${
+                totalPct === 100
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : totalPct > 100
+                  ? 'bg-red-50 border-red-200 text-red-600'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
+              }`}>
+                <div className="flex-1 bg-white/60 rounded-full h-1.5 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${totalPct > 100 ? 'bg-red-400' : totalPct === 100 ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                    style={{ width: `${Math.min(totalPct, 100)}%` }} />
+                </div>
+                <span>{totalPct}% of 100%</span>
+                {totalPct < 100 && <span className="font-normal opacity-70">{pctShortfall}% remaining</span>}
+                {totalPct === 100 && <span>✓</span>}
+                {totalPct > 100 && <span>Over by {totalPct - 100}%</span>}
+              </div>
+            )}
+            {!hasPercentage && totalSumMinor > 0 && (
               <p className="mt-2 text-xs text-gray-500 tabular-nums">Total: <span className="font-semibold text-gray-800">{fmt(totalSumMinor)}</span></p>
             )}
           </div>
