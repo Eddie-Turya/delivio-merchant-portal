@@ -274,8 +274,10 @@ export default function BillSplitPage() {
           {createError && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{createError}</p>}
 
           <div className="flex items-center gap-3">
-            <button onClick={handleCreate} disabled={creating}
-              className="flex items-center gap-2 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 px-4 py-2 rounded-lg transition">
+            <button onClick={handleCreate}
+              disabled={creating || (hasPercentage && totalPct !== 100)}
+              title={hasPercentage && totalPct !== 100 ? `Percentages must reach 100% (currently ${totalPct}%)` : undefined}
+              className="flex items-center gap-2 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition">
               {creating ? <><Loader2 size={13} className="animate-spin" /> Creating…</> : <><QrCode size={14} /> Generate shared link</>}
             </button>
             <button onClick={() => setView('list')} className="text-sm text-gray-500">Cancel</button>
