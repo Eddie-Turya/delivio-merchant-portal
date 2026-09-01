@@ -4,8 +4,8 @@ import { useEnv } from '../context/EnvContext'
 import { Layout } from '../components/Layout'
 import { Users, Plus, X, ChevronDown, RefreshCw, CheckCircle, Clock, XCircle, Loader2, Trash2, Copy, QrCode, ExternalLink } from 'lucide-react'
 
-function fmt(minor: number) {
-  return `TZS ${(minor / 100).toLocaleString('en-TZ', { minimumFractionDigits: 2 })}`
+function fmt(n: number) {
+  return `TZS ${Math.round(n).toLocaleString('en-TZ')}`
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -92,7 +92,7 @@ export default function BillSplitPage() {
 
   const resolveAmountMinor = (p: Participant): number => {
     if (p.share_type === 'percentage') return Math.round(totalAmountMinor * p.share_value / 100)
-    return Math.round(p.share_value * 100) // share_value stored as TZS decimal
+    return Math.round(p.share_value) // amount stored as TZS directly (no *100)
   }
 
   const addParticipant = () => setParticipants(p => [...p, { name: '', phone: '', share_type: 'fixed', share_value: 0 }])
@@ -197,8 +197,8 @@ export default function BillSplitPage() {
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <label className="block text-[11px] font-semibold text-blue-600 mb-1 uppercase tracking-wide">Total Bill Amount (TZS) *</label>
               <input type="number" min={0} placeholder="e.g. 50000"
-                value={totalAmountMinor ? totalAmountMinor / 100 : ''}
-                onChange={e => setTotalAmountMinor(Math.round(Number(e.target.value) * 100))}
+                value={totalAmountMinor || ''}
+                onChange={e => setTotalAmountMinor(Math.round(Number(e.target.value)))}
                 className="w-full sm:w-56 text-sm border border-blue-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400 tabular-nums bg-white" />
               <p className="text-[10px] text-blue-500 mt-1">Required when any participant uses a percentage share.</p>
             </div>
