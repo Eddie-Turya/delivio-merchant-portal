@@ -130,11 +130,13 @@ export default function BillSplitPage() {
     }))
     setCreating(true)
     try {
+      const merchantData = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
       const result = await api.createBillSplit({
         title, description,
         total_amount_minor: hasPercentage ? totalAmountMinor : totalSumMinor,
         participants: resolvedParticipants,
         envType: mode,
+        creator_name: merchantData.name || undefined,
       })
       const created = result.data || result
       setTitle(''); setDescription(''); setTotalAmountMinor(0)
