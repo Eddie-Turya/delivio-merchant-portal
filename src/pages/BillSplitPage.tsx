@@ -47,7 +47,7 @@ function CopyBtn({ text }: { text: string }) {
   )
 }
 
-interface Participant { name: string; phone: string; amount_minor: number }
+interface Participant { name: string; phone: string; share_type: 'fixed' | 'percentage'; share_value: number }
 type View = 'list' | 'create' | 'detail'
 
 export default function BillSplitPage() {
@@ -61,9 +61,10 @@ export default function BillSplitPage() {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [totalAmountMinor, setTotalAmountMinor] = useState<number>(0)
   const [participants, setParticipants] = useState<Participant[]>([
-    { name: '', phone: '', amount_minor: 0 },
-    { name: '', phone: '', amount_minor: 0 },
+    { name: '', phone: '', share_type: 'fixed', share_value: 0 },
+    { name: '', phone: '', share_type: 'fixed', share_value: 0 },
   ])
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
@@ -87,27 +88,54 @@ export default function BillSplitPage() {
     if (view === 'detail') setView('list')
   }
 
-  const addParticipant = () => setParticipants(p => [...p, { name: '', phone: '', amount_minor: 0 }])
+  const hasPercentage = participants.some(p => p.share_type === 'percentage')
+
+  const resolveAmountMinor = (p: Participant): number => {
+    if (p.share_type === 'percentage') return Math.round(totalAmountMinor * p.share_value / 100)
+    return Math.round(p.share_value * 100) // share_value stored as TZS decimal
+  }
+
+  const addParticipant = () => setParticipants(p => [...p, { name: '', phone: '', share_type: 'fixed', share_value: 0 }])
   const removeParticipant = (i: number) => setParticipants(p => p.filter((_, idx) => idx !== i))
   const update = (i: number, f: keyof Participant, v: string | number) =>
     setParticipants(p => p.map((x, idx) => idx === i ? { ...x, [f]: v } : x))
+  const toggleShareType = (i: number) =>
+    setParticipants(p => p.map((x, idx) => idx === i ? { ...x, share_type: x.share_type === 'fixed' ? 'percentage' : 'fixed', share_value: 0 } : x))
 
-  const totalMinor = participants.reduce((s, p) => s + (Number(p.amount_minor) || 0), 0)
+  const totalSumMinor = participants.reduce((s, p) => s + resolveAmountMinor(p), 0)
 
   const handleCreate = async () => {
     setCreateError('')
     if (!title.trim()) { setCreateError('Title is required'); return }
     if (participants.length < 2) { setCreateError('At least 2 participants required'); return }
+    if (hasPercentage && !totalAmountMinor) { setCreateError('Enter total bill amount to use percentage shares'); return }
     for (const p of participants) {
       if (!p.name.trim() || !p.phone.trim()) { setCreateError('All participants need name and phone'); return }
-      if (Number(p.amount_minor) < 200) { setCreateError('Minimum TZS 2.00 per participant'); return }
+      const amt = resolveAmountMinor(p)
+      if (amt < 200) { setCreateError(`Minimum TZS 2.00 per participant (${p.name || 'row'} is too low)`); return }
     }
+    const resolvedParticipants = participants.map(p => ({
+      name: p.name,
+      phone: p.phone,
+      display_name: p.name,
+      share_type: p.share_type,
+      share_value: p.share_value,
+      amount_minor: resolveAmountMinor(p),
+    }))
     setCreating(true)
     try {
-      const result = await api.createBillSplit({ title, description, participants, envType: mode })
+      const result = await api.createBillSplit({
+        title, description,
+        total_amount_minor: hasPercentage ? totalAmountMinor : totalSumMinor,
+        participants: resolvedParticipants,
+        envType: mode,
+      })
       const created = result.data || result
-      setTitle(''); setDescription('')
-      setParticipants([{ name: '', phone: '', amount_minor: 0 }, { name: '', phone: '', amount_minor: 0 }])
+      setTitle(''); setDescription(''); setTotalAmountMinor(0)
+      setParticipants([
+        { name: '', phone: '', share_type: 'fixed', share_value: 0 },
+        { name: '', phone: '', share_type: 'fixed', share_value: 0 },
+      ])
       loadList(); setDetail(created); setView('detail')
     } catch (e: any) {
       setCreateError(e?.response?.data?.error || e?.message || 'Failed')
@@ -118,7 +146,7 @@ export default function BillSplitPage() {
 
   return (
     <Layout>
-    <div className="space-y-5">
+    <div className="p-4 sm:p-6 space-y-5 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -159,34 +187,56 @@ export default function BillSplitPage() {
             </div>
           </div>
 
+          {hasPercentage && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <label className="block text-[11px] font-semibold text-blue-600 mb-1 uppercase tracking-wide">Total Bill Amount (TZS) *</label>
+              <input type="number" min={0} placeholder="e.g. 50000"
+                value={totalAmountMinor ? totalAmountMinor / 100 : ''}
+                onChange={e => setTotalAmountMinor(Math.round(Number(e.target.value) * 100))}
+                className="w-full sm:w-56 text-sm border border-blue-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400 tabular-nums bg-white" />
+              <p className="text-[10px] text-blue-500 mt-1">Required when any participant uses a percentage share.</p>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Participants *</label>
               <button onClick={addParticipant} className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1"><Plus size={11} /> Add</button>
             </div>
             <div className="space-y-2">
-              {participants.map((p, i) => (
-                <div key={i} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-[10px] font-bold text-gray-400 w-5 text-center">{i + 1}</span>
-                  <input value={p.name} onChange={e => update(i, 'name', e.target.value)} placeholder="Full name"
-                    className="flex-1 text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
-                  <input value={p.phone} onChange={e => update(i, 'phone', e.target.value)} placeholder="0712345678"
-                    className="flex-1 text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-gray-400">TZS</span>
-                    <input type="number" min={2} placeholder="0.00"
-                      value={p.amount_minor ? p.amount_minor / 100 : ''}
-                      onChange={e => update(i, 'amount_minor', Math.round(Number(e.target.value) * 100))}
-                      className="w-24 text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 tabular-nums" />
+              {participants.map((p, i) => {
+                const isPercent = p.share_type === 'percentage'
+                const resolvedAmt = resolveAmountMinor(p)
+                return (
+                  <div key={i} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg flex-wrap sm:flex-nowrap">
+                    <span className="text-[10px] font-bold text-gray-400 w-5 text-center flex-shrink-0">{i + 1}</span>
+                    <input value={p.name} onChange={e => update(i, 'name', e.target.value)} placeholder="Full name"
+                      className="flex-1 min-w-[100px] text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                    <input value={p.phone} onChange={e => update(i, 'phone', e.target.value)} placeholder="0712345678"
+                      className="flex-1 min-w-[110px] text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => toggleShareType(i)}
+                        className={`text-[10px] font-bold px-2 py-1.5 rounded border transition flex-shrink-0 ${isPercent ? 'bg-violet-100 border-violet-300 text-violet-700' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>
+                        {isPercent ? '%' : 'TZS'}
+                      </button>
+                      <input type="number" min={0} max={isPercent ? 100 : undefined}
+                        placeholder={isPercent ? '0' : '0.00'}
+                        value={p.share_value || ''}
+                        onChange={e => update(i, 'share_value', Number(e.target.value))}
+                        className="w-20 text-xs border border-gray-200 rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 tabular-nums" />
+                      {isPercent && resolvedAmt > 0 && (
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">{fmt(resolvedAmt)}</span>
+                      )}
+                    </div>
+                    {participants.length > 2 && (
+                      <button onClick={() => removeParticipant(i)} className="text-gray-300 hover:text-red-400 transition flex-shrink-0"><X size={13} /></button>
+                    )}
                   </div>
-                  {participants.length > 2 && (
-                    <button onClick={() => removeParticipant(i)} className="text-gray-300 hover:text-red-400 transition"><X size={13} /></button>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
-            {totalMinor > 0 && (
-              <p className="mt-2 text-xs text-gray-500 tabular-nums">Total: <span className="font-semibold text-gray-800">{fmt(totalMinor)}</span></p>
+            {totalSumMinor > 0 && (
+              <p className="mt-2 text-xs text-gray-500 tabular-nums">Total: <span className="font-semibold text-gray-800">{fmt(totalSumMinor)}</span></p>
             )}
           </div>
 
@@ -261,19 +311,31 @@ export default function BillSplitPage() {
               <p className="text-xs font-semibold text-gray-700">Participants</p>
             </div>
             <div className="divide-y divide-gray-50">
-              {(detail.participants || []).map((p: any) => (
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-gray-500">
-                    {p.name?.[0]?.toUpperCase()}
+              {(detail.participants || []).map((p: any) => {
+                const label = p.display_name || p.name
+                const shareLabel = p.share_type === 'percentage' && p.share_value
+                  ? `${p.share_value}%`
+                  : null
+                return (
+                  <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-gray-500">
+                      {label?.[0]?.toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-900">{label}</p>
+                      <p className="text-[11px] text-gray-400">{p.phone}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-medium text-gray-700 tabular-nums">{fmt(Number(p.amount_minor))}</p>
+                      {shareLabel && <p className="text-[10px] text-violet-500 font-semibold">{shareLabel}</p>}
+                      {Number(p.paid_minor) > 0 && Number(p.paid_minor) < Number(p.amount_minor) && (
+                        <p className="text-[10px] text-amber-500">Paid {fmt(Number(p.paid_minor))}</p>
+                      )}
+                    </div>
+                    <StatusPill status={p.status} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-900">{p.name}</p>
-                    <p className="text-[11px] text-gray-400">{p.phone}</p>
-                  </div>
-                  <span className="text-xs font-medium text-gray-700 tabular-nums">{fmt(Number(p.amount_minor))}</span>
-                  <StatusPill status={p.status} />
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
