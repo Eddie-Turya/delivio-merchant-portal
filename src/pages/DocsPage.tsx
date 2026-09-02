@@ -256,7 +256,7 @@ export function DocsPage() {
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Base URL</span>
                 </div>
                 <div className="px-5 py-4 bg-white">
-                  <code className="text-sm font-mono font-semibold text-gray-800">https://wisopay.io</code>
+                  <code className="text-sm font-mono font-semibold text-gray-800">https://api.wisopay.io/v1</code>
                 </div>
               </div>
 
@@ -367,6 +367,9 @@ Content-Type: application/json`} />
   "amount_minor": 10000,
   "currency": "TZS",
   "merchant_reference": "order-123",
+  "fee_minor": 150,
+  "fee_bearer": "merchant",
+  "net_amount_minor": 9850,
   "refunded_amount_minor": 0,
   "created_at": "2026-08-19T09:00:00.000Z",
   "updated_at": "2026-08-19T09:00:00.000Z"
@@ -471,7 +474,10 @@ Content-Type: application/json`} />
     "status": "COMPLETED",
     "amount_minor": 10000,
     "currency": "TZS",
-    "merchant_reference": "order-123"
+    "merchant_reference": "order-123",
+    "fee_minor": 150,
+    "fee_bearer": "merchant",
+    "net_amount_minor": 9850
   }
 }`} />
 
@@ -490,7 +496,7 @@ Content-Type: application/json`} />
               <p className="text-gray-500 text-sm leading-relaxed mb-4">
                 Rotate your webhook secret if it is ever compromised or as part of regular key hygiene. The endpoint generates a new secret and invalidates the previous one immediately.
               </p>
-              <CodeBlock id="webhook-rotate" lang="bash" code={`curl -X POST https://wisopay.io/admin/portal/webhooks/{id}/rotate-secret \\
+              <CodeBlock id="webhook-rotate" lang="bash" code={`curl -X POST https://api.wisopay.io/v1/webhooks/{id}/rotate-secret \\
   -H "Authorization: Bearer <portal_jwt>"`} />
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-6 mb-3">Rotation response</h3>
               <CodeBlock id="webhook-rotate-response" lang="json" code={`{
@@ -506,7 +512,7 @@ Content-Type: application/json`} />
 
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Verifying signatures</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-4">
-                Each webhook includes an <code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">X-Delivio-Signature</code> header — HMAC-SHA256 of the raw request body signed with your webhook secret.
+                Each webhook includes an <code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">X-Wisopay-Signature</code> header — HMAC-SHA256 of the raw request body signed with your webhook secret.
                 Always verify this before processing.
               </p>
               <CodeBlock id="webhook-verify" lang="javascript" code={`const crypto = require('crypto')
@@ -523,8 +529,8 @@ function verifyWebhook(rawBody, signature, secret) {
 }
 
 // Express handler:
-app.post('/webhooks/deliviopay', express.raw({ type: '*/*' }), (req, res) => {
-  const sig = req.headers['x-delivio-signature']
+app.post('/webhooks/wisopay', express.raw({ type: '*/*' }), (req, res) => {
+  const sig = req.headers['x-wisopay-signature']
   if (!verifyWebhook(req.body, sig, process.env.WEBHOOK_SECRET)) {
     return res.status(400).send('Invalid signature')
   }
@@ -574,7 +580,7 @@ app.post('/webhooks/deliviopay', express.raw({ type: '*/*' }), (req, res) => {
 
               <div className="mt-6">
                 <Callout type="info">
-                  Questions or integration issues? Email <a href="mailto:support@deliviosend.com" className="font-semibold underline underline-offset-2">support@deliviosend.com</a> with your <code className="font-mono text-xs bg-blue-100 px-1 rounded">request_id</code> and we'll help you out.
+                  Questions or integration issues? Email <a href="mailto:support@wisopay.io" className="font-semibold underline underline-offset-2">support@wisopay.io</a> with your <code className="font-mono text-xs bg-blue-100 px-1 rounded">request_id</code> and we'll help you out.
                 </Callout>
               </div>
             </section>
