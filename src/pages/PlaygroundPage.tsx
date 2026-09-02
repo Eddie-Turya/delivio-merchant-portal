@@ -27,6 +27,21 @@ const ENDPOINTS = [
         pathParams: [],
       },
       {
+        id: 'pesa-push',
+        method: 'POST',
+        path: '/v1/payments/pesa-push',
+        label: 'Selcom Pesa Push',
+        desc: 'Send an in-app push notification to the customer\'s Selcom Pesa app — no USSD prompt.',
+        defaultBody: JSON.stringify({
+          amount_minor: 5000,
+          currency: 'TZS',
+          merchant_reference: `pesa-${Date.now()}`,
+          phone_number: '255712345678',
+          description: 'Test payment',
+        }, null, 2),
+        pathParams: [],
+      },
+      {
         id: 'get-payment',
         method: 'GET',
         path: '/v1/payments/:id',
