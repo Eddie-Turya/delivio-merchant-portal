@@ -256,7 +256,7 @@ export function DocsPage() {
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Base URL</span>
                 </div>
                 <div className="px-5 py-4 bg-white">
-                  <code className="text-sm font-mono font-semibold text-gray-800">https://pay.deliviosend.com</code>
+                  <code className="text-sm font-mono font-semibold text-gray-800">https://wisopay.io</code>
                 </div>
               </div>
 
@@ -283,7 +283,7 @@ export function DocsPage() {
                 Include your API key as a Bearer token in every request. Use your <strong className="text-gray-800 font-semibold">live key</strong> (<code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">dpay_live_</code>) for production and your <strong className="text-gray-800 font-semibold">sandbox key</strong> (<code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">dpay_test_</code>) for testing.
               </p>
               <CodeBlock id="auth-header" lang="http" code={`POST /v1/payments HTTP/1.1
-Host: pay.deliviosend.com
+Host: wisopay.io
 Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx
 Content-Type: application/json`} />
               <div className="mt-4">
@@ -302,7 +302,7 @@ Content-Type: application/json`} />
                 Use your <code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">dpay_test_</code> key to test your integration without moving real money.
                 Sandbox payments complete instantly and fire real webhook events — no USSD push is sent to any phone.
               </p>
-              <CodeBlock id="sandbox-example" lang="bash" code={`curl -X POST https://pay.deliviosend.com/v1/payments \\
+              <CodeBlock id="sandbox-example" lang="bash" code={`curl -X POST https://wisopay.io/v1/payments \\
   -H "Authorization: Bearer dpay_test_xxxxxxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -348,7 +348,7 @@ Content-Type: application/json`} />
                 <Param name="phone_number" type="string">Customer's phone in international format (e.g. <code className="font-mono text-xs bg-gray-100 px-1 rounded">255712345678</code>). Required for live USSD push.</Param>
               </div>
 
-              <CodeBlock id="create-request" lang="bash" code={`curl -X POST https://pay.deliviosend.com/v1/payments \\
+              <CodeBlock id="create-request" lang="bash" code={`curl -X POST https://wisopay.io/v1/payments \\
   -H "Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: order-123-attempt-1" \\
@@ -388,7 +388,7 @@ Content-Type: application/json`} />
               <p className="text-gray-500 leading-relaxed mb-6">
                 Retrieve the current state of a payment. Use this to poll for status changes or to verify a completed transaction.
               </p>
-              <CodeBlock id="get-request" lang="bash" code={`curl https://pay.deliviosend.com/v1/payments/pay_a1b2c3d4-... \\
+              <CodeBlock id="get-request" lang="bash" code={`curl https://wisopay.io/v1/payments/pay_a1b2c3d4-... \\
   -H "Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx"`} />
 
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-7 mb-3">Payment statuses</h3>
@@ -423,7 +423,7 @@ Content-Type: application/json`} />
                 <Param name="offset" type="integer">Pagination offset. Default <code className="font-mono text-xs bg-gray-100 px-1 rounded">0</code>.</Param>
               </div>
 
-              <CodeBlock id="list-request" lang="bash" code={`curl "https://pay.deliviosend.com/v1/payments?limit=10&offset=0" \\
+              <CodeBlock id="list-request" lang="bash" code={`curl "https://wisopay.io/v1/payments?limit=10&offset=0" \\
   -H "Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx"`} />
 
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-7 mb-3">Response</h3>
@@ -490,7 +490,7 @@ Content-Type: application/json`} />
               <p className="text-gray-500 text-sm leading-relaxed mb-4">
                 Rotate your webhook secret if it is ever compromised or as part of regular key hygiene. The endpoint generates a new secret and invalidates the previous one immediately.
               </p>
-              <CodeBlock id="webhook-rotate" lang="bash" code={`curl -X POST https://pay.deliviosend.com/admin/portal/webhooks/{id}/rotate-secret \\
+              <CodeBlock id="webhook-rotate" lang="bash" code={`curl -X POST https://wisopay.io/admin/portal/webhooks/{id}/rotate-secret \\
   -H "Authorization: Bearer <portal_jwt>"`} />
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-6 mb-3">Rotation response</h3>
               <CodeBlock id="webhook-rotate-response" lang="json" code={`{

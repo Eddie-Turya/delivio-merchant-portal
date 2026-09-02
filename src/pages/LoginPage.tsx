@@ -31,14 +31,14 @@ export function LoginPage() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-900/60 backdrop-blur-md">
         <a
-          href="https://pay.deliviosend.com"
+          href="https://wisopay.io"
           className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors group"
         >
           <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
           Back to home
         </a>
         <a
-          href="https://pay.deliviosend.com#pricing"
+          href="https://wisopay.io#pricing"
           className="text-sm text-slate-400 hover:text-emerald-400 transition-colors"
         >
           View plans

@@ -6,7 +6,7 @@ import {
   FlaskConical, Clock, AlertCircle, CheckCircle2, XCircle
 } from 'lucide-react'
 
-const BASE = 'https://pay.deliviosend.com'
+const BASE = 'https://wisopay.io'
 
 const ENDPOINTS = [
   {

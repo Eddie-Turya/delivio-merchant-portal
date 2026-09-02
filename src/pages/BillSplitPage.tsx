@@ -150,7 +150,7 @@ export default function BillSplitPage() {
     } finally { setCreating(false) }
   }
 
-  const paymentUrl = detail?.payment_url || (detail?.id ? `https://pay.deliviosend.com/pay/split/${detail.id}` : '')
+  const paymentUrl = detail?.payment_url || (detail?.id ? `https://wisopay.io/pay/split/${detail.id}` : '')
 
   return (
     <Layout>
