@@ -53,7 +53,7 @@ export function LoginPage() {
             <Zap size={20} className="text-white" />
           </div>
           <div>
-            <p className="text-lg font-bold text-white leading-tight">Yalla Pay</p>
+            <p className="text-lg font-bold text-white leading-tight">Wisopay</p>
             <p className="text-xs text-slate-400">Merchant Portal</p>
           </div>
         </div>

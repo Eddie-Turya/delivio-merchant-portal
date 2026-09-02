@@ -55,7 +55,7 @@ function InvoicePreview({ inv, merchant, onClose, onConfirm, sending }: {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-3">
                   <span className="text-white text-xs font-bold">D</span>
                 </div>
-                <p className="text-sm font-bold text-gray-900">{merchant.name || 'Yalla Pay'}</p>
+                <p className="text-sm font-bold text-gray-900">{merchant.name || 'Wisopay'}</p>
                 <p className="text-xs text-gray-400">{merchant.slug}</p>
               </div>
               <div className="text-right">

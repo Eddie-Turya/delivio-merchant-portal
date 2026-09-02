@@ -1,7 +1,7 @@
 {
-  "name": "Yalla Pay — Merchant Portal",
-  "short_name": "Yalla Pay",
-  "description": "Manage your Yalla Pay merchant account",
+  "name": "Wisopay — Merchant Portal",
+  "short_name": "Wisopay",
+  "description": "Manage your Wisopay merchant account",
   "start_url": "/portal/",
   "scope": "/portal/",
   "display": "standalone",
