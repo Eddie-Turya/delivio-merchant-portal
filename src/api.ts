@@ -103,9 +103,16 @@ export const api = {
   // Collect
   collectUssd: (body: { phone: string; amount_minor: number; currency?: string; description?: string; envType?: 'live' | 'sandbox' }) =>
     req<any>('POST', '/collect/ussd', body),
+  collectSelcomPesa: (body: { phone: string; amount_minor: number; currency?: string; description?: string; envType?: 'live' | 'sandbox' }) =>
+    req<any>('POST', '/collect/selcom-pesa', body),
   collectStatus: (paymentId: string) => req<any>('GET', `/collect/status/${paymentId}`),
   createPaymentLink: (body: { amount_minor: number; currency?: string; description?: string; expires_in_hours?: number; envType?: 'live' | 'sandbox' }) =>
     req<any>('POST', '/collect/link', body),
+
+  // Contacts
+  getContacts: () => req<any>('GET', '/contacts'),
+  saveContact: (name: string, phone: string) => req<any>('POST', '/contacts', { name, phone }),
+  deleteContact: (id: string) => req<any>('DELETE', `/contacts/${id}`),
 
   // Fee settings
   getFeeSettings: () => req<any>('GET', '/settings/fee'),

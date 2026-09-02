@@ -38,7 +38,7 @@ export default function App() {
         <Route path="/payments" element={<Guard><PaymentsPage /></Guard>} />
         <Route path="/api-keys" element={<Guard><APIKeysPage /></Guard>} />
         <Route path="/webhooks" element={<Guard><WebhooksPage /></Guard>} />
-        <Route path="/docs" element={<Guard><DocsPage /></Guard>} />
+        <Route path="/docs" element={<DocsPage />} />
         <Route path="/collect" element={<Guard><CollectPage /></Guard>} />
         <Route path="/playground" element={<Guard><PlaygroundPage /></Guard>} />
         <Route path="/account" element={<Guard><AccountPage /></Guard>} />

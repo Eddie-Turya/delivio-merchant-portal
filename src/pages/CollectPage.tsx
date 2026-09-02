@@ -1,208 +1,285 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
-import { Smartphone, Link2, CheckCircle2, XCircle, Loader2, Copy, Check, Clock } from 'lucide-react'
+import {
+  Smartphone, Link2, CheckCircle2, XCircle, Loader2,
+  Copy, Check, Clock, BookUser, Wallet, ArrowRight, Zap,
+} from 'lucide-react'
+
+type Contact = { id: string; name: string; phone: string }
+type PushState = 'idle' | 'loading' | 'pending' | 'success' | 'failed'
 
 function formatTZS(minor: number) {
   return `TZS ${minor.toLocaleString('en-TZ', { maximumFractionDigits: 0 })}`
 }
 
-// ── USSD Push Card ────────────────────────────────────────────────────────────
+// ── Shared push logic ─────────────────────────────────────────────────────────
 
-type UssdState = 'idle' | 'loading' | 'pending' | 'success' | 'failed'
-
-function UssdCard() {
-  const { mode } = useEnv()
+function usePushCard(apiFn: (body: any) => Promise<any>, mode: 'live' | 'sandbox') {
   const [phone, setPhone] = useState('')
   const [amount, setAmount] = useState('')
   const [desc, setDesc] = useState('')
-  const [state, setState] = useState<UssdState>('idle')
+  const [state, setState] = useState<PushState>('idle')
   const [error, setError] = useState('')
-  const [successMsg, setSuccessMsg] = useState('')
+  const [successAmount, setSuccessAmount] = useState(0)
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [saveName, setSaveName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    api.getContacts().then((r: any) => setContacts(r.contacts || [])).catch(() => {})
+  }, [])
 
   function stopPoll() {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
   }
 
   async function send() {
-    if (!phone.trim() || !amount) { setError('Phone and amount are required.'); return }
+    if (!phone.trim() || !amount) { setError('Phone and amount are required'); return }
     const amountMinor = Math.round(parseFloat(amount))
-    if (amountMinor < 200) { setError('Minimum amount is TZS 200.'); return }
-
-    setError('')
-    setState('loading')
-    stopPoll()
-
+    if (amountMinor < 200) { setError('Minimum amount is TZS 200'); return }
+    setError(''); setState('loading'); stopPoll()
     try {
-      const res = await api.collectUssd({ phone: phone.trim(), amount_minor: amountMinor, description: desc || undefined, envType: mode })
-      const paymentId = res.payment_id
-
+      const res = await apiFn({ phone: phone.trim(), amount_minor: amountMinor, description: desc || undefined, envType: mode })
       setState('pending')
+      const paymentId = res.payment_id
       let attempts = 0
       pollRef.current = setInterval(async () => {
         attempts++
-        if (attempts > 60) {
-          stopPoll()
-          setState('failed')
-          setError('Timed out waiting for confirmation.')
-          return
-        }
+        if (attempts > 60) { stopPoll(); setState('failed'); setError('Timed out — please check Transactions.'); return }
         try {
           const s = await api.collectStatus(paymentId)
           const status = (s.status || '').toUpperCase()
           if (status === 'COMPLETED') {
-            stopPoll()
-            setSuccessMsg(`${formatTZS(amountMinor)} received from ${phone.trim()}.`)
-            setState('success')
-          } else if (status === 'FAILED' || status === 'CANCELLED' || status === 'EXPIRED') {
-            stopPoll()
-            setError('Payment was declined or cancelled.')
-            setState('failed')
+            stopPoll(); setSuccessAmount(amountMinor); setState('success')
+          } else if (['FAILED', 'CANCELLED', 'EXPIRED'].includes(status)) {
+            stopPoll(); setError('Payment declined or cancelled.'); setState('failed')
           }
         } catch (_) {}
       }, 3000)
     } catch (e: any) {
-      setState('failed')
-      setError(e.message || 'Failed to send USSD request.')
+      setState('failed'); setError(e.message || 'Failed to send request')
     }
   }
 
-  function reset() {
-    stopPoll()
-    setState('idle')
-    setError('')
-    setSuccessMsg('')
+  async function saveContact() {
+    if (!saveName.trim() || !phone.trim()) return
+    setSaving(true)
+    try {
+      const contact = await api.saveContact(saveName.trim(), phone.trim())
+      setContacts(prev => [...prev.filter(c => c.phone !== contact.phone), contact].sort((a, b) => a.name.localeCompare(b.name)))
+      setSaved(true)
+    } catch (_) {}
+    setSaving(false)
   }
 
+  function reset() {
+    stopPoll(); setState('idle'); setError(''); setSaveName(''); setSaved(false)
+  }
+
+  const matchedContact = contacts.find(c => c.phone === phone.trim())
+  const alreadySaved = !!matchedContact
+
+  return { phone, setPhone, amount, setAmount, desc, setDesc, state, error, successAmount, contacts, saveName, setSaveName, saving, saved, alreadySaved, matchedContact, send, saveContact, reset }
+}
+
+// ── Field component ───────────────────────────────────────────────────────────
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-        <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-          <Smartphone size={18} className="text-emerald-600" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-gray-900">USSD Push</p>
-          <p className="text-xs text-gray-400">Send a payment request directly to a customer's phone</p>
-        </div>
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between">
+        <label className="text-sm font-semibold text-gray-700">{label}</label>
+        {hint && <span className="text-xs text-gray-400">{hint}</span>}
       </div>
-
-      <div className="p-5 flex-1 flex flex-col gap-4">
-
-        {/* Success */}
-        {state === 'success' && (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <CheckCircle2 size={48} className="text-emerald-500" />
-            <p className="text-base font-bold text-gray-900">Payment confirmed</p>
-            <p className="text-sm text-gray-500">{successMsg}</p>
-            <button onClick={reset} className="mt-2 px-4 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
-              New collection
-            </button>
-          </div>
-        )}
-
-        {/* Pending */}
-        {state === 'pending' && (
-          <div className="flex flex-col items-center gap-4 py-6 text-center">
-            <Loader2 size={40} className="text-emerald-500 animate-spin" />
-            <div>
-              <p className="text-sm font-bold text-gray-900">Waiting for customer</p>
-              <p className="text-xs text-gray-400 mt-1">USSD request sent to <strong>{phone}</strong>. They need to approve on their phone.</p>
-            </div>
-            <div className="w-full space-y-2 text-left mt-2">
-              {[
-                { label: 'Request sent to phone', done: true },
-                { label: 'Customer sees USSD prompt', done: false },
-                { label: 'Customer enters PIN', done: false },
-                { label: 'Payment confirmed here', done: false },
-              ].map(({ label, done }) => (
-                <div key={label} className="flex items-center gap-2 text-xs">
-                  <span className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${done ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                    {done ? '✓' : ''}
-                  </span>
-                  <span className={done ? 'text-gray-400 line-through' : 'text-gray-600'}>{label}</span>
-                </div>
-              ))}
-            </div>
-            <button onClick={reset} className="text-xs text-gray-400 hover:text-gray-600 transition-colors mt-1">
-              Cancel
-            </button>
-          </div>
-        )}
-
-        {/* Failed */}
-        {state === 'failed' && (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <XCircle size={48} className="text-red-400" />
-            <p className="text-sm font-bold text-gray-900">Payment failed</p>
-            {error && <p className="text-xs text-red-500">{error}</p>}
-            <button onClick={reset} className="mt-2 px-4 py-2 text-sm font-semibold text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
-              Try again
-            </button>
-          </div>
-        )}
-
-        {/* Form */}
-        {(state === 'idle' || state === 'loading') && (
-          <>
-            {error && (
-              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
-            )}
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Customer Phone</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="0712 345 678"
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 bg-gray-50 placeholder:text-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Amount (TZS)</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  placeholder="5000"
-                  min="2"
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 bg-gray-50 placeholder:text-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                  Description <span className="font-normal normal-case tracking-normal text-gray-300">— optional</span>
-                </label>
-                <input
-                  type="text"
-                  value={desc}
-                  onChange={e => setDesc(e.target.value)}
-                  placeholder="Invoice #001"
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 bg-gray-50 placeholder:text-gray-300"
-                />
-              </div>
-            </div>
-            <button
-              onClick={send}
-              disabled={state === 'loading'}
-              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors mt-1"
-            >
-              {state === 'loading' ? <><Loader2 size={15} className="animate-spin" /> Sending…</> : 'Send Request'}
-            </button>
-          </>
-        )}
-
-      </div>
+      {children}
     </div>
   )
 }
 
-// ── Payment Link Card ─────────────────────────────────────────────────────────
+function inputCls(accent: string) {
+  return `w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-white placeholder:text-gray-300 focus:outline-none focus:ring-2 ${accent} transition-all`
+}
 
-function LinkCard() {
-  const { mode } = useEnv()
+// ── Accent types ──────────────────────────────────────────────────────────────
+
+type AccentSet = { ring: string; btn: string; pulseBg: string; spinnerText: string; gradient: string }
+
+// ── Push form ─────────────────────────────────────────────────────────────────
+
+function PushForm({ hook, accent, listId, buttonLabel, pushType }: {
+  hook: ReturnType<typeof usePushCard>
+  accent: AccentSet
+  listId: string
+  buttonLabel: string
+  pushType: 'ussd' | 'pesa'
+}) {
+  const { phone, setPhone, amount, setAmount, desc, setDesc, state, error, successAmount, contacts, saveName, setSaveName, saving, saved, alreadySaved, matchedContact, send, saveContact, reset } = hook
+
+  if (state === 'success') {
+    return (
+      <div className="flex flex-col items-center text-center py-10 gap-6">
+        <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
+          <CheckCircle2 size={38} className="text-emerald-500" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-3xl font-bold text-gray-900 tabular-nums tracking-tight">{formatTZS(successAmount)}</p>
+          <p className="text-sm text-gray-400">Received from <span className="font-semibold text-gray-600">{phone}</span></p>
+        </div>
+
+        {!alreadySaved && !saved ? (
+          <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-5 text-left border border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <BookUser size={11} /> Save customer
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={saveName}
+                onChange={e => setSaveName(e.target.value)}
+                placeholder="Customer name"
+                onKeyDown={e => e.key === 'Enter' && saveContact()}
+                className="flex-1 px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-gray-300 placeholder:text-gray-300 transition-all"
+              />
+              <button
+                onClick={saveContact}
+                disabled={saving || !saveName.trim()}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-gray-800 rounded-xl hover:bg-gray-900 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+              >
+                {saving ? <Loader2 size={13} className="animate-spin" /> : 'Save'}
+              </button>
+            </div>
+          </div>
+        ) : saved ? (
+          <p className="text-sm font-medium text-emerald-600 flex items-center gap-1.5">
+            <Check size={15} /> Saved to contacts
+          </p>
+        ) : (
+          <p className="text-sm text-gray-400 flex items-center gap-1.5">
+            <BookUser size={13} /> {matchedContact?.name}
+          </p>
+        )}
+
+        <button onClick={reset} className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors group">
+          New collection <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      </div>
+    )
+  }
+
+  if (state === 'pending') {
+    return (
+      <div className="flex flex-col items-center text-center py-10 gap-5">
+        <div className={`w-20 h-20 rounded-full ${accent.pulseBg} flex items-center justify-center`}>
+          <Loader2 size={32} className={`${accent.spinnerText} animate-spin`} />
+        </div>
+        <div className="space-y-1">
+          <p className="text-base font-bold text-gray-900">Waiting for payment</p>
+          <p className="text-sm text-gray-400">
+            {pushType === 'pesa' ? 'Push notification sent to' : 'USSD prompt sent to'}{' '}
+            <span className="font-semibold text-gray-700">{phone}</span>
+          </p>
+        </div>
+        <p className="text-xs text-gray-400 max-w-xs leading-relaxed">
+          Ask the customer to approve the {pushType === 'pesa' ? 'in-app notification' : 'USSD prompt'} on their phone
+        </p>
+        <button onClick={reset} className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors">Cancel</button>
+      </div>
+    )
+  }
+
+  if (state === 'failed') {
+    return (
+      <div className="flex flex-col items-center text-center py-10 gap-5">
+        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
+          <XCircle size={34} className="text-red-400" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-base font-bold text-gray-900">Payment failed</p>
+          {error && <p className="text-sm text-red-500 max-w-xs">{error}</p>}
+        </div>
+        <button onClick={reset} className={`px-7 py-3 text-sm font-bold text-white rounded-xl transition-all shadow-sm ${accent.btn}`}>
+          Try again
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{error}</div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2 sm:col-span-1">
+          <Field label="Customer phone">
+            <div>
+              <input
+                type="tel"
+                list={listId}
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="0712 345 678"
+                className={inputCls(accent.ring)}
+              />
+              {contacts.length > 0 && (
+                <datalist id={listId}>
+                  {contacts.map(c => <option key={c.id} value={c.phone} label={c.name} />)}
+                </datalist>
+              )}
+              {matchedContact && (
+                <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                  <BookUser size={10} /> {matchedContact.name}
+                </p>
+              )}
+            </div>
+          </Field>
+        </div>
+
+        <div className="col-span-2 sm:col-span-1">
+          <Field label="Amount" hint="TZS">
+            <input
+              type="number"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="10,000"
+              min="200"
+              className={inputCls(accent.ring)}
+            />
+          </Field>
+        </div>
+      </div>
+
+      <Field label="Description" hint="optional">
+        <input
+          type="text"
+          value={desc}
+          onChange={e => setDesc(e.target.value)}
+          placeholder="Invoice #001, School fees, Rent…"
+          className={inputCls(accent.ring)}
+        />
+      </Field>
+
+      <button
+        onClick={send}
+        disabled={state === 'loading'}
+        className={`w-full flex items-center justify-center gap-2.5 py-3.5 text-sm font-bold text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-[0.99] bg-gradient-to-r ${accent.gradient}`}
+      >
+        {state === 'loading'
+          ? <><Loader2 size={16} className="animate-spin" /> Sending…</>
+          : <><Zap size={15} /> {buttonLabel}</>}
+      </button>
+    </div>
+  )
+}
+
+// ── Link form ─────────────────────────────────────────────────────────────────
+
+function LinkForm({ mode }: { mode: 'live' | 'sandbox' }) {
   const [amount, setAmount] = useState('')
   const [desc, setDesc] = useState('')
   const [expires, setExpires] = useState('24')
@@ -212,183 +289,256 @@ function LinkCard() {
   const [copied, setCopied] = useState(false)
 
   async function generate() {
-    if (!amount) { setError('Amount is required.'); return }
+    if (!amount) { setError('Amount is required'); return }
     const amountMinor = Math.round(parseFloat(amount))
-    if (amountMinor < 200) { setError('Minimum amount is TZS 200.'); return }
-    setError('')
-    setLoading(true)
+    if (amountMinor < 200) { setError('Minimum amount is TZS 200'); return }
+    setError(''); setLoading(true)
     try {
-      const res = await api.createPaymentLink({
-        amount_minor: amountMinor,
-        description: desc || undefined,
-        expires_in_hours: parseInt(expires),
-        envType: mode,
-      })
-      setResult(res)
-    } catch (e: any) {
-      setError(e.message || 'Failed to generate link.')
-    } finally {
-      setLoading(false)
-    }
+      setResult(await api.createPaymentLink({ amount_minor: amountMinor, description: desc || undefined, expires_in_hours: parseInt(expires), envType: mode }))
+    } catch (e: any) { setError(e.message || 'Failed to generate link') }
+    finally { setLoading(false) }
   }
 
   function copy() {
     if (!result?.url) return
-    navigator.clipboard.writeText(result.url).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    navigator.clipboard.writeText(result.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) })
   }
 
-  function reset() {
-    setResult(null)
-    setError('')
-    setAmount('')
-    setDesc('')
-    setExpires('24')
-  }
+  const blueRing = 'focus:ring-blue-500/20 focus:border-blue-400'
 
-  const expiryLabel: Record<string, string> = { '1': '1 hour', '6': '6 hours', '24': '24 hours', '72': '3 days', '168': '7 days' }
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-          <Link2 size={18} className="text-blue-600" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-gray-900">Payment Link</p>
-          <p className="text-xs text-gray-400">Generate a link — the customer enters their own phone</p>
-        </div>
-      </div>
-
-      <div className="p-5 flex-1 flex flex-col gap-4">
-
-        {/* Result */}
-        {result && (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2.5">
-              <CheckCircle2 size={15} className="flex-shrink-0" />
-              <span className="font-semibold">Link created</span>
-              <span className="text-emerald-600 font-normal">· {formatTZS(result.amount_minor)}{result.description ? ` · ${result.description}` : ''}</span>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Payment URL</label>
-              <div className="flex gap-2">
-                <input
-                  readOnly
-                  value={result.url}
-                  className="flex-1 min-w-0 px-3 py-2 text-xs font-mono border border-gray-200 rounded-lg bg-gray-50 text-gray-600 select-all"
-                  onClick={e => (e.target as HTMLInputElement).select()}
-                />
-                <button
-                  onClick={copy}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-all flex-shrink-0 ${
-                    copied
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                      : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {copied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
-                </button>
-              </div>
-            </div>
-
+  if (result) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-4">
+          <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-emerald-800">
+              {formatTZS(result.amount_minor)}{result.description ? ` · ${result.description}` : ''}
+            </p>
             {result.expires_at && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                <Clock size={12} />
-                Expires {new Date(result.expires_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}
-              </div>
+              <p className="text-xs text-emerald-600 flex items-center gap-1 mt-0.5">
+                <Clock size={10} /> Expires {new Date(result.expires_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}
+              </p>
             )}
+          </div>
+        </div>
 
-            <button onClick={reset} className="w-full py-2.5 text-sm font-bold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors mt-1">
-              Generate another link
+        <Field label="Share this link">
+          <div className="flex gap-2">
+            <input
+              readOnly
+              value={result.url}
+              onClick={e => (e.target as HTMLInputElement).select()}
+              className="flex-1 min-w-0 px-4 py-3 text-xs font-mono border border-gray-200 rounded-xl bg-gray-50 text-gray-600 select-all"
+            />
+            <button
+              onClick={copy}
+              className={`flex items-center gap-1.5 px-5 py-3 text-sm font-bold rounded-xl border transition-all flex-shrink-0 ${
+                copied
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+              }`}
+            >
+              {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
             </button>
           </div>
-        )}
+        </Field>
 
-        {/* Form */}
-        {!result && (
-          <>
-            {error && (
-              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
-            )}
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Amount (TZS)</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  placeholder="10000"
-                  min="2"
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 bg-gray-50 placeholder:text-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                  Description <span className="font-normal normal-case tracking-normal text-gray-300">— optional</span>
-                </label>
-                <input
-                  type="text"
-                  value={desc}
-                  onChange={e => setDesc(e.target.value)}
-                  placeholder="School fees · Term 2"
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 bg-gray-50 placeholder:text-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Expires after</label>
-                <select
-                  value={expires}
-                  onChange={e => setExpires(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 bg-gray-50 text-gray-700"
-                >
-                  <option value="1">1 hour</option>
-                  <option value="6">6 hours</option>
-                  <option value="24">24 hours</option>
-                  <option value="72">3 days</option>
-                  <option value="168">7 days</option>
-                </select>
-                <p className="text-[11px] text-gray-400 mt-1">Link expires in {expiryLabel[expires] || expires + ' hours'}</p>
-              </div>
-            </div>
-            <button
-              onClick={generate}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors mt-1"
-            >
-              {loading ? <><Loader2 size={15} className="animate-spin" /> Generating…</> : 'Generate Link'}
-            </button>
-          </>
-        )}
-
+        <button
+          onClick={() => { setResult(null); setAmount(''); setDesc(''); setExpires('24') }}
+          className="w-full py-3.5 text-sm font-bold text-blue-700 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 group"
+        >
+          Generate another <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        </button>
       </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {error && <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{error}</div>}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2 sm:col-span-1">
+          <Field label="Amount" hint="TZS">
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="10,000" min="200"
+              className={inputCls(blueRing)} />
+          </Field>
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <Field label="Expires after">
+            <select value={expires} onChange={e => setExpires(e.target.value)}
+              className={`${inputCls(blueRing)} text-gray-700 bg-white`}>
+              <option value="1">1 hour</option>
+              <option value="6">6 hours</option>
+              <option value="24">24 hours</option>
+              <option value="72">3 days</option>
+              <option value="168">7 days</option>
+            </select>
+          </Field>
+        </div>
+      </div>
+
+      <Field label="Description" hint="optional">
+        <input type="text" value={desc} onChange={e => setDesc(e.target.value)}
+          placeholder="School fees · Term 2, Invoice #12…"
+          className={inputCls(blueRing)} />
+      </Field>
+
+      <button onClick={generate} disabled={loading}
+        className="w-full flex items-center justify-center gap-2.5 py-3.5 text-sm font-bold text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-[0.99] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
+        {loading ? <><Loader2 size={16} className="animate-spin" /> Generating…</> : <><Link2 size={15} /> Generate Payment Link</>}
+      </button>
     </div>
   )
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
+type Method = 'ussd' | 'pesa' | 'link'
+
+const METHODS: { id: Method; label: string; sublabel: string; icon: React.ReactNode; gradient: string; desc: string }[] = [
+  {
+    id: 'ussd',
+    label: 'USSD Push',
+    sublabel: 'Any mobile wallet',
+    icon: <Smartphone size={18} />,
+    gradient: 'from-emerald-500 to-teal-600',
+    desc: 'Send a USSD prompt directly to a customer\'s phone — works with M-Pesa, Tigo Pesa, Airtel Money and more.',
+  },
+  {
+    id: 'pesa',
+    label: 'Selcom Pesa',
+    sublabel: 'In-app push',
+    icon: <Wallet size={18} />,
+    gradient: 'from-violet-600 to-purple-700',
+    desc: 'Trigger a push notification inside the Selcom Pesa app — no USSD, faster approval experience.',
+  },
+  {
+    id: 'link',
+    label: 'Payment Link',
+    sublabel: 'Share & collect',
+    icon: <Link2 size={18} />,
+    gradient: 'from-blue-500 to-indigo-600',
+    desc: 'Generate a link you can share via WhatsApp, SMS or email — customer enters their own number.',
+  },
+]
+
+const ACCENTS: Record<Method, AccentSet> = {
+  ussd: {
+    ring: 'focus:ring-emerald-500/20 focus:border-emerald-400',
+    btn: 'from-emerald-500 to-teal-600',
+    pulseBg: 'bg-emerald-50',
+    spinnerText: 'text-emerald-600',
+    gradient: 'from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700',
+  },
+  pesa: {
+    ring: 'focus:ring-violet-500/20 focus:border-violet-400',
+    btn: 'from-violet-600 to-purple-700',
+    pulseBg: 'bg-violet-50',
+    spinnerText: 'text-violet-600',
+    gradient: 'from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800',
+  },
+  link: {
+    ring: 'focus:ring-blue-500/20 focus:border-blue-400',
+    btn: 'from-blue-500 to-indigo-600',
+    pulseBg: 'bg-blue-50',
+    spinnerText: 'text-blue-600',
+    gradient: 'from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700',
+  },
+}
+
 export function CollectPage() {
+  const { mode } = useEnv()
+  const [method, setMethod] = useState<Method>('ussd')
+
+  const ussdHook = usePushCard(api.collectUssd,       mode)
+  const pesaHook = usePushCard(api.collectSelcomPesa, mode)
+
+  const active = METHODS.find(m => m.id === method)!
+
   return (
     <Layout>
-      <div className="border-b px-4 sm:px-6 py-4 flex items-center gap-3 bg-white border-gray-100">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600">
-          <Link2 size={16} className="text-white" />
-        </div>
-        <div>
-          <h1 className="text-base font-bold text-gray-900">Collect Payment</h1>
-          <p className="text-xs text-gray-400">Send a USSD push or share a payment link</p>
-        </div>
-      </div>
+      <div className="px-4 sm:px-8 py-8 max-w-3xl">
 
-      <div className="p-4 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-          <UssdCard />
-          <LinkCard />
+        {/* Page header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Collect Payment</h1>
+          <p className="text-sm text-gray-400 mt-1">Choose how you want to request money from a customer</p>
         </div>
+
+        {/* Method selector */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {METHODS.map(m => {
+            const isActive = method === m.id
+            return (
+              <button
+                key={m.id}
+                onClick={() => setMethod(m.id)}
+                className={`relative flex flex-col items-start gap-2.5 p-4 rounded-2xl border-2 text-left transition-all duration-150 ${
+                  isActive
+                    ? 'border-transparent bg-white shadow-lg ring-1 ring-black/5'
+                    : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
+                }`}
+              >
+                {isActive && (
+                  <div className={`absolute inset-x-0 top-0 h-0.5 rounded-t-[14px] bg-gradient-to-r ${m.gradient}`} />
+                )}
+
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                  isActive
+                    ? `bg-gradient-to-br ${m.gradient} text-white shadow-sm`
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {m.icon}
+                </div>
+
+                <div className="min-w-0 w-full">
+                  <p className={`text-xs font-bold leading-tight ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
+                    {m.label}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5 leading-tight hidden sm:block">{m.sublabel}</p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Main card */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          {/* Card header */}
+          <div className="px-7 pt-7 pb-6 border-b border-gray-50">
+            <div className="flex items-start gap-4">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-white shadow-sm bg-gradient-to-br ${active.gradient}`}>
+                {active.icon}
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">{active.label}</h2>
+                <p className="text-sm text-gray-400 mt-0.5 leading-relaxed">{active.desc}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card body */}
+          <div className="px-7 py-7">
+            {method === 'ussd' && (
+              <PushForm hook={ussdHook} accent={ACCENTS.ussd} listId="contacts-ussd" buttonLabel="Send USSD Request" pushType="ussd" />
+            )}
+            {method === 'pesa' && (
+              <PushForm hook={pesaHook} accent={ACCENTS.pesa} listId="contacts-pesa" buttonLabel="Send Pesa Push" pushType="pesa" />
+            )}
+            {method === 'link' && (
+              <LinkForm mode={mode} />
+            )}
+          </div>
+        </div>
+
+        {/* Footer tip */}
+        <p className="text-xs text-gray-400 mt-4 text-center">
+          {method === 'ussd' && 'Works with M-Pesa, Tigo Pesa, Airtel Money, Halopesa and more'}
+          {method === 'pesa' && 'Customer must have the Selcom Pesa app installed and logged in'}
+          {method === 'link' && 'Links expire after the selected duration — generate a new one if needed'}
+        </p>
       </div>
     </Layout>
   )

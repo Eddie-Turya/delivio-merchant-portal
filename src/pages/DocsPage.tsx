@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Layout } from '../components/Layout'
-import { Copy, Check, AlertTriangle, Info, Zap, Key, FlaskConical, Webhook, AlertCircle, BookOpen } from 'lucide-react'
+import { Copy, Check, AlertTriangle, Info, Zap, Key, FlaskConical, Webhook, AlertCircle, BookOpen, Wallet } from 'lucide-react'
 
 /* ─── Clipboard hook ─────────────────────────────────────────── */
 function useClipboard() {
@@ -124,9 +124,10 @@ const SECTIONS = [
   { id: 'overview',       label: 'Overview',        group: null },
   { id: 'auth',          label: 'Authentication',   group: null },
   { id: 'sandbox',       label: 'Sandbox',          group: null },
-  { id: 'create-payment', label: 'Create Payment',  group: 'Endpoints' },
-  { id: 'get-payment',   label: 'Get Payment',      group: 'Endpoints' },
-  { id: 'list-payments', label: 'List Payments',    group: 'Endpoints' },
+  { id: 'create-payment', label: 'Create Payment',    group: 'Endpoints' },
+  { id: 'pesa-push',     label: 'Selcom Pesa Push',  group: 'Endpoints' },
+  { id: 'get-payment',   label: 'Get Payment',        group: 'Endpoints' },
+  { id: 'list-payments', label: 'List Payments',      group: 'Endpoints' },
   { id: 'webhooks',      label: 'Webhooks',         group: null },
   { id: 'errors',        label: 'Errors',           group: null },
 ]
@@ -378,6 +379,82 @@ Content-Type: application/json`} />
               <div className="mt-5">
                 <Callout type="tip">
                   <strong>Idempotency</strong> — pass an <code className="font-mono text-xs bg-emerald-100 px-1 rounded">Idempotency-Key</code> header to safely retry requests. Repeated calls with the same key return the original response without creating a duplicate payment.
+                </Callout>
+              </div>
+            </section>
+
+            {/* ── Selcom Pesa Push ── */}
+            <section id="pesa-push">
+              <SectionHeading icon={<Wallet size={17} className="text-violet-600" />}>
+                Selcom Pesa Push
+              </SectionHeading>
+              <p className="text-gray-500 leading-relaxed mb-2">
+                Trigger an in-app push notification directly inside the <strong className="text-gray-800 font-semibold">Selcom Pesa</strong> app, bypassing the USSD flow.
+                The customer sees a native payment approval dialog — faster and more seamless than a USSD prompt.
+              </p>
+              <div className="mb-6">
+                <Callout type="info">
+                  The customer must have the <strong>Selcom Pesa app installed and logged in</strong> on their phone. This method does not fall back to USSD — use <code className="font-mono text-xs bg-blue-100 px-1 rounded">POST /v1/payments</code> for a USSD push that works with any mobile wallet.
+                </Callout>
+              </div>
+
+              <Endpoint method="POST" path="/v1/payments/pesa-push" />
+
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Request parameters</h3>
+              <div className="rounded-2xl border border-gray-200 overflow-hidden mb-6 bg-white">
+                <Param name="amount_minor" type="integer" required>Amount in the smallest currency unit. For TZS: minimum <strong>200</strong>.</Param>
+                <Param name="currency" type="string" required>ISO-4217 currency code. Currently <code className="font-mono text-xs bg-gray-100 px-1 rounded">TZS</code> only.</Param>
+                <Param name="merchant_reference" type="string" required>Your unique order/reference ID — must be unique per environment.</Param>
+                <Param name="phone_number" type="string" required>Customer's Selcom Pesa-registered number in international format (e.g. <code className="font-mono text-xs bg-gray-100 px-1 rounded">255712345678</code>).</Param>
+                <Param name="description" type="string">Optional payment description shown to the customer inside the app.</Param>
+              </div>
+
+              <CodeBlock id="pesa-push-request" lang="bash" code={`curl -X POST https://api.wisopay.io/v1/payments/pesa-push \\
+  -H "Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: order-456-attempt-1" \\
+  -d '{
+    "amount_minor": 15000,
+    "currency": "TZS",
+    "merchant_reference": "order-456",
+    "phone_number": "255712345678",
+    "description": "Invoice #456"
+  }'`} />
+
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-7 mb-3">Response</h3>
+              <CodeBlock id="pesa-push-response" lang="json" code={`{
+  "id": "pay_e5f6g7h8-...",
+  "object": "payment",
+  "status": "PENDING",
+  "amount_minor": 15000,
+  "currency": "TZS",
+  "merchant_reference": "order-456",
+  "fee_minor": 225,
+  "fee_bearer": "merchant",
+  "net_amount_minor": 14775,
+  "created_at": "2026-08-19T09:10:00.000Z",
+  "updated_at": "2026-08-19T09:10:00.000Z"
+}`} />
+
+              <div className="mt-5 space-y-3">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 mt-7">How it works</h3>
+                <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white">
+                  {[
+                    ['1', "Your server calls this endpoint with the customer's phone and amount."],
+                    ['2', 'Wisopay registers the order with Selcom and sends an in-app push notification.'],
+                    ['3', 'The customer opens the Selcom Pesa app and taps Approve.'],
+                    ['4', 'Selcom sends a webhook to Wisopay; Wisopay forwards a payment.completed event to your endpoint.'],
+                    ['5', 'Poll GET /v1/payments/:id or rely on webhooks — do not re-submit the request while PENDING.'],
+                  ].map(([step, desc]) => (
+                    <div key={step} className="flex items-start gap-4 px-5 py-4 border-b border-gray-100 last:border-0">
+                      <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{step}</span>
+                      <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <Callout type="tip">
+                  <strong>Idempotency</strong> — always include an <code className="font-mono text-xs bg-emerald-100 px-1 rounded">Idempotency-Key</code> header. If the push notification fails to deliver, the customer can retry from the app — do not re-call the endpoint, as it will create a duplicate order at Selcom.
                 </Callout>
               </div>
             </section>
