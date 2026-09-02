@@ -302,7 +302,7 @@ Content-Type: application/json`} />
                 Use your <code className="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded text-xs">dpay_test_</code> key to test your integration without moving real money.
                 Sandbox payments complete instantly and fire real webhook events — no USSD push is sent to any phone.
               </p>
-              <CodeBlock id="sandbox-example" lang="bash" code={`curl -X POST https://wisopay.io/v1/payments \\
+              <CodeBlock id="sandbox-example" lang="bash" code={`curl -X POST https://api.wisopay.io/v1/payments \\
   -H "Authorization: Bearer dpay_test_xxxxxxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -348,7 +348,7 @@ Content-Type: application/json`} />
                 <Param name="phone_number" type="string">Customer's phone in international format (e.g. <code className="font-mono text-xs bg-gray-100 px-1 rounded">255712345678</code>). Required for live USSD push.</Param>
               </div>
 
-              <CodeBlock id="create-request" lang="bash" code={`curl -X POST https://wisopay.io/v1/payments \\
+              <CodeBlock id="create-request" lang="bash" code={`curl -X POST https://api.wisopay.io/v1/payments \\
   -H "Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: order-123-attempt-1" \\
@@ -388,7 +388,7 @@ Content-Type: application/json`} />
               <p className="text-gray-500 leading-relaxed mb-6">
                 Retrieve the current state of a payment. Use this to poll for status changes or to verify a completed transaction.
               </p>
-              <CodeBlock id="get-request" lang="bash" code={`curl https://wisopay.io/v1/payments/pay_a1b2c3d4-... \\
+              <CodeBlock id="get-request" lang="bash" code={`curl https://api.wisopay.io/v1/payments/pay_a1b2c3d4-... \\
   -H "Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx"`} />
 
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-7 mb-3">Payment statuses</h3>
@@ -423,7 +423,7 @@ Content-Type: application/json`} />
                 <Param name="offset" type="integer">Pagination offset. Default <code className="font-mono text-xs bg-gray-100 px-1 rounded">0</code>.</Param>
               </div>
 
-              <CodeBlock id="list-request" lang="bash" code={`curl "https://wisopay.io/v1/payments?limit=10&offset=0" \\
+              <CodeBlock id="list-request" lang="bash" code={`curl "https://api.wisopay.io/v1/payments?limit=10&offset=0" \\
   -H "Authorization: Bearer dpay_live_xxxxxxxxxxxxxxxxxxxx"`} />
 
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-7 mb-3">Response</h3>
