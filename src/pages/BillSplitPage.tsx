@@ -5,7 +5,7 @@ import { Layout } from '../components/Layout'
 import { Users, Plus, X, ChevronDown, RefreshCw, CheckCircle, Clock, XCircle, Loader2, Trash2, Copy, QrCode, ExternalLink } from 'lucide-react'
 
 function fmt(n: number) {
-  return `TZS ${Math.round(n).toLocaleString('en-TZ')}`
+  return `TZS ${Math.round(n).toLocaleString('en-US')}`
 }
 
 function StatusPill({ status }: { status: string }) {
