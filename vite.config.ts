@@ -11,6 +11,6 @@ export default defineConfig({
       '/portal': { target: API, changeOrigin: true },
     },
   },
-  base: process.env.VITE_BASE_PATH || '/portal/',
+  base: process.env.VITE_BASE_PATH || '/',
   build: { outDir: 'dist', sourcemap: false },
 })
