@@ -118,6 +118,33 @@ export function PaymentDetailPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Fee breakdown */}
+                {data.fee_minor > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Fee Breakdown</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Transaction amount</span>
+                        <span className="font-medium text-gray-800">{fmt(data.amount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Platform fee</span>
+                        <span className="font-medium text-red-500">−{fmt(data.fee_minor)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Fee paid by</span>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${data.fee_bearer === 'customer' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
+                          {data.fee_bearer === 'customer' ? 'Customer' : 'Merchant'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-1.5 mt-1.5">
+                        <span className="font-semibold text-gray-700">Amount received</span>
+                        <span className="font-bold text-emerald-600">{fmt(data.net_amount_minor)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Refund */}
