@@ -26,6 +26,18 @@ export const api = {
   isLoggedIn: () => !!getToken(),
   logout: clearToken,
 
+  register: (business_name: string, email: string, password: string, name?: string) =>
+    req<any>('POST', '/auth/register', { business_name, email, password, name }),
+
+  verifyEmail: async (email: string, otp: string) => {
+    const data = await req<any>('POST', '/auth/verify-email', { email, otp })
+    setToken(data.token)
+    return data
+  },
+
+  resendOtp: (email: string) =>
+    req<any>('POST', '/auth/resend-otp', { email }),
+
   login: async (email: string, password: string) => {
     const data = await req<any>('POST', '/auth/login', { email, password })
     setToken(data.token)

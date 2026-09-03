@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from './pages/LoginPage'
+import { SignupPage } from './pages/SignupPage'
+import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { PaymentsPage } from './pages/PaymentsPage'
 import { APIKeysPage } from './pages/APIKeysPage'
@@ -34,6 +36,8 @@ export default function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/dashboard" element={<Guard><DashboardPage /></Guard>} />
         <Route path="/payments" element={<Guard><PaymentsPage /></Guard>} />
         <Route path="/api-keys" element={<Guard><APIKeysPage /></Guard>} />

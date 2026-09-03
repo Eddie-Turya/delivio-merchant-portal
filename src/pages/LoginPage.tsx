@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle, ArrowLeft } from 'lucide-react'
 import { api } from '../api'
 
@@ -116,6 +116,13 @@ export function LoginPage() {
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
+
+          <p className="mt-6 text-center text-sm text-slate-400">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
       </div>
