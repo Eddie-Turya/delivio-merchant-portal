@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Layout } from '../components/Layout'
+import { OnboardingChecklist } from '../components/OnboardingChecklist'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { TrendingUp, CreditCard, DollarSign, AlertTriangle, RotateCcw, Activity, FlaskConical, ArrowRight } from 'lucide-react'
@@ -58,6 +59,7 @@ export function DashboardPage() {
       </div>
 
       <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
+        <OnboardingChecklist />
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {loading

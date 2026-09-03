@@ -4,6 +4,7 @@ import { api } from '../api'
 import {
   User, Building2, Mail, KeyRound, Check, AlertCircle,
   Clock, Bell, BellOff, Lock, ShieldCheck, BadgeCheck, Upload, FileText, Landmark, Smartphone, XCircle, Percent,
+  QrCode, MonitorSmartphone, Trash2, RefreshCw,
 } from 'lucide-react'
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -68,6 +69,20 @@ export function AccountPage() {
   const [uploading, setUploading] = useState<string | null>(null)
   const [uploadMsg, setUploadMsg] = useState<{ type: string; ok: boolean; text: string } | null>(null)
 
+  // 2FA
+  const [twofa, setTwofa] = useState<{ enabled: boolean } | null>(null)
+  const [qrCode, setQrCode] = useState<string | null>(null)
+  const [totpSetupSecret, setTotpSetupSecret] = useState('')
+  const [totpCode, setTotpCode] = useState('')
+  const [twofaStep, setTwofaStep] = useState<'idle' | 'setup' | 'disable'>('idle')
+  const [twofaMsg, setTwofaMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [twofaLoading, setTwofaLoading] = useState(false)
+
+  // Sessions
+  const [sessions, setSessions] = useState<any[]>([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [revoking, setRevoking] = useState<string | null>(null)
+
   useEffect(() => {
     api.me().then((data: any) => {
       setProfile(data)
@@ -79,7 +94,57 @@ export function AccountPage() {
       .catch(console.error).finally(() => setKycLoading(false))
 
     api.getFeeSettings().then(setFeeSettings).catch(console.error)
+
+    // Load 2FA status from /me
+    api.me().then((d: any) => {
+      setTwofa({ enabled: !!d.user?.totp_enabled })
+    }).catch(() => {})
+
+    // Load sessions
+    setSessionsLoading(true)
+    api.sessions().then(r => setSessions(r.data)).catch(() => {}).finally(() => setSessionsLoading(false))
   }, [])
+
+  const start2faSetup = async () => {
+    setTwofaLoading(true); setTwofaMsg(null)
+    try {
+      const d = await api.setup2fa()
+      setQrCode(d.qr_code)
+      setTotpSetupSecret(d.secret)
+      setTwofaStep('setup')
+    } catch (e: any) { setTwofaMsg({ ok: false, text: e.message }) }
+    finally { setTwofaLoading(false) }
+  }
+
+  const enable2fa = async () => {
+    setTwofaLoading(true); setTwofaMsg(null)
+    try {
+      await api.enable2fa(totpCode)
+      setTwofa({ enabled: true })
+      setTwofaStep('idle'); setQrCode(null); setTotpCode(''); setTotpSetupSecret('')
+      setTwofaMsg({ ok: true, text: '2FA is now active on your account' })
+    } catch (e: any) { setTwofaMsg({ ok: false, text: e.message }) }
+    finally { setTwofaLoading(false) }
+  }
+
+  const disable2fa = async () => {
+    setTwofaLoading(true); setTwofaMsg(null)
+    try {
+      await api.disable2fa(totpCode)
+      setTwofa({ enabled: false })
+      setTwofaStep('idle'); setTotpCode('')
+      setTwofaMsg({ ok: true, text: '2FA has been disabled' })
+    } catch (e: any) { setTwofaMsg({ ok: false, text: e.message }) }
+    finally { setTwofaLoading(false) }
+  }
+
+  const revokeSession = async (id: string) => {
+    setRevoking(id)
+    try {
+      await api.revokeSession(id)
+      setSessions(prev => prev.filter(s => s.id !== id))
+    } catch { /* ignore */ } finally { setRevoking(null) }
+  }
 
   const uploadKycDoc = async (type: string, file: File) => {
     setUploading(type); setUploadMsg(null)
@@ -118,7 +183,7 @@ export function AccountPage() {
     if (newPw.length < 8) { setPwMsg({ ok: false, text: 'At least 8 characters required' }); return }
     setPwSaving(true); setPwMsg(null)
     try {
-      await (api as any).updateMe({ currentPassword: currentPw, newPassword: newPw })
+      await api.changePassword(currentPw, newPw)
       setPwMsg({ ok: true, text: 'Password changed successfully' })
       setCurrentPw(''); setNewPw(''); setConfirmPw('')
     } catch (err: any) {
@@ -140,6 +205,7 @@ export function AccountPage() {
             {[1,2,3,4].map(i => <div key={i} className="bg-white rounded-xl border border-gray-100 p-6 animate-pulse h-40" />)}
           </div>
         ) : (
+          <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
             {/* ── LEFT COLUMN ── */}
@@ -429,6 +495,125 @@ export function AccountPage() {
 
             </div>
           </div>
+
+          {/* ── 2FA + SESSIONS (full width) ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
+
+            {/* Two-factor authentication */}
+            <Card>
+              <CardHeader icon={QrCode} title="Two-Factor Authentication"
+                badge={twofa
+                  ? <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${twofa.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {twofa.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  : null}
+              />
+              {twofaMsg && (
+                <div className={`mb-4 flex items-center gap-2 text-xs font-medium ${twofaMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {twofaMsg.ok ? <Check size={14} /> : <AlertCircle size={14} />} {twofaMsg.text}
+                </div>
+              )}
+
+              {twofaStep === 'idle' && !twofa?.enabled && (
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500">Protect your account with Google Authenticator or any TOTP app.</p>
+                  <button onClick={start2faSetup} disabled={twofaLoading}
+                    className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    {twofaLoading ? <RefreshCw size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+                    Set Up Authenticator
+                  </button>
+                </div>
+              )}
+
+              {twofaStep === 'setup' && qrCode && (
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-500">Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.</p>
+                  <img src={qrCode} alt="QR code" className="w-40 h-40 rounded-lg border border-gray-100" />
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-1">Or enter this key manually:</p>
+                    <code className="text-xs font-mono bg-gray-50 border border-gray-100 px-2 py-1 rounded break-all">{totpSetupSecret}</code>
+                  </div>
+                  <input type="text" inputMode="numeric" maxLength={6} value={totpCode}
+                    onChange={e => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000" className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-center text-lg font-mono tracking-widest focus:outline-none focus:border-emerald-400" />
+                  <div className="flex gap-2">
+                    <button onClick={enable2fa} disabled={twofaLoading || totpCode.length !== 6}
+                      className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                      {twofaLoading ? 'Verifying…' : 'Activate'}
+                    </button>
+                    <button onClick={() => { setTwofaStep('idle'); setQrCode(null); setTotpCode('') }}
+                      className="px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-700 border border-gray-200 transition">Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              {twofaStep === 'idle' && twofa?.enabled && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                    <ShieldCheck size={14} /> Your account is protected with 2FA
+                  </div>
+                  {twofaStep === 'idle' && (
+                    <button onClick={() => setTwofaStep('disable')}
+                      className="text-xs text-red-500 hover:text-red-700 transition font-medium">
+                      Disable 2FA
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {twofaStep === 'disable' && (
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500">Enter your current authenticator code to disable 2FA.</p>
+                  <input type="text" inputMode="numeric" maxLength={6} value={totpCode}
+                    onChange={e => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000" className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-center text-lg font-mono tracking-widest focus:outline-none focus:border-red-400" />
+                  <div className="flex gap-2">
+                    <button onClick={disable2fa} disabled={twofaLoading || totpCode.length !== 6}
+                      className="bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                      {twofaLoading ? 'Disabling…' : 'Disable 2FA'}
+                    </button>
+                    <button onClick={() => { setTwofaStep('idle'); setTotpCode('') }}
+                      className="px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-700 border border-gray-200 transition">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Active sessions */}
+            <Card>
+              <CardHeader icon={MonitorSmartphone} title="Active Sessions" />
+              {sessionsLoading ? (
+                <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}</div>
+              ) : sessions.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No sessions found</p>
+              ) : (
+                <div className="space-y-2">
+                  {sessions.map(s => (
+                    <div key={s.id} className={`flex items-center gap-3 p-3 rounded-lg border ${s.is_current ? 'border-emerald-200 bg-emerald-50/40' : 'border-gray-100 bg-gray-50/40'}`}>
+                      <MonitorSmartphone size={14} className={s.is_current ? 'text-emerald-500' : 'text-gray-400'} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-700 truncate">
+                          {s.user_agent ? s.user_agent.split(' ').slice(-2).join(' ') : 'Unknown device'}
+                          {s.is_current && <span className="ml-2 text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Current</span>}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {s.ip || 'Unknown IP'} · {new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                      {!s.is_current && (
+                        <button onClick={() => revokeSession(s.id)} disabled={revoking === s.id}
+                          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50">
+                          {revoking === s.id ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+          </div>
+          </>
         )}
       </div>
     </Layout>

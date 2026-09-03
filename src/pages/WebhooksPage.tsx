@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
 import { api } from '../api'
-import { Webhook, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, X, ShieldCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import { Webhook, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, X, ShieldCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle, RefreshCw, RotateCcw } from 'lucide-react'
 
 const ALL_EVENTS = [
   'payment.completed',
@@ -23,6 +23,7 @@ export function WebhooksPage() {
   const [expandedLogs, setExpandedLogs] = useState<string | null>(null)
   const [logs, setLogs] = useState<Record<string, any[]>>({})
   const [logsLoading, setLogsLoading] = useState<string | null>(null)
+  const [retrying, setRetrying] = useState<string | null>(null)
   const [rotating, setRotating] = useState<string | null>(null)
 
   const load = () => {
@@ -83,13 +84,23 @@ export function WebhooksPage() {
     }
   }
 
+  const retryDelivery = async (webhookId: string, deliveryId: string) => {
+    setRetrying(deliveryId)
+    try {
+      await api.retryWebhookDelivery(deliveryId)
+      // Refresh logs for this webhook
+      const res = await api.webhookDeliveries(webhookId)
+      setLogs(prev => ({ ...prev, [webhookId]: res.data }))
+    } catch { /* ignore */ } finally { setRetrying(null) }
+  }
+
   const toggleLogs = async (id: string) => {
     if (expandedLogs === id) { setExpandedLogs(null); return }
     setExpandedLogs(id)
     if (logs[id]) return
     setLogsLoading(id)
     try {
-      const res = await api.webhookLogs(id)
+      const res = await api.webhookDeliveries(id)
       setLogs(prev => ({ ...prev, [id]: res.data }))
     } catch { setLogs(prev => ({ ...prev, [id]: [] })) }
     finally { setLogsLoading(null) }
@@ -273,9 +284,22 @@ export function WebhooksPage() {
                             </div>
                             {log.error && <p className="text-[10px] text-red-400 truncate mt-0.5">{log.error}</p>}
                           </div>
-                          <p className="text-[10px] text-gray-400 flex-shrink-0">
-                            {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {!log.success && (
+                              <button
+                                onClick={() => retryDelivery(hook.id, log.id)}
+                                disabled={retrying === log.id}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 hover:text-emerald-600 transition disabled:opacity-50"
+                                title="Retry this delivery"
+                              >
+                                <RotateCcw size={11} className={retrying === log.id ? 'animate-spin' : ''} />
+                                Retry
+                              </button>
+                            )}
+                            <p className="text-[10px] text-gray-400">
+                              {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>

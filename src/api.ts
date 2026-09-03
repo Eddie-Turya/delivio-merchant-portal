@@ -173,4 +173,22 @@ export const api = {
   listBillSplits: () => req<any>('GET', '/bill-splits'),
   getBillSplit: (id: string) => req<any>('GET', `/bill-splits/${id}`),
   cancelBillSplit: (id: string) => req<any>('POST', `/bill-splits/${id}/cancel`, {}),
+
+  // 2FA
+  setup2fa: () => req<any>('POST', '/auth/2fa/setup', {}),
+  enable2fa: (code: string) => req<any>('POST', '/auth/2fa/enable', { code }),
+  disable2fa: (code: string) => req<any>('POST', '/auth/2fa/disable', { code }),
+  verify2fa: (partial_token: string, code: string) => req<any>('POST', '/auth/2fa/verify', { partial_token, code }),
+
+  // Password
+  changePassword: (current_password: string, new_password: string) =>
+    req<any>('PATCH', '/me/password', { current_password, new_password }),
+
+  // Sessions
+  sessions: () => req<any>('GET', '/sessions'),
+  revokeSession: (id: string) => req<any>('DELETE', `/sessions/${id}`),
+
+  // Webhook delivery logs & retry
+  webhookDeliveries: (webhookId: string) => req<any>('GET', `/webhooks/${webhookId}/logs`),
+  retryWebhookDelivery: (deliveryId: string) => req<any>('POST', `/webhooks/deliveries/${deliveryId}/retry`, {}),
 }
