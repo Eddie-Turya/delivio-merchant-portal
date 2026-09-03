@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <clipPath id="ic">
+      <rect x="0" y="0" width="180" height="180" rx="40"/>
+    </clipPath>
+    <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#c8c8c8"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1a0f"/>
+      <stop offset="100%" stop-color="#0a1a14"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Subtle green glow -->
+  <ellipse cx="200" cy="315" rx="400" ry="300" fill="#2DC87A" opacity="0.06"/>
+  <!-- Icon (left) -->
+  <g transform="translate(96, 225)">
+    <rect width="180" height="180" rx="40" fill="#2DC87A"/>
+    <g clip-path="url(#ic)">
+      <path d="M-5,38 C11,38 20,135 42,135 C64,135 69,40 90,40 C111,40 116,135 138,135 C160,135 169,38 185,38"
+            fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,5)"/>
+      <path d="M-5,38 C11,38 20,135 42,135 C64,135 69,40 90,40 C111,40 116,135 138,135 C160,135 169,38 185,38"
+            fill="none" stroke="url(#wg)" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M-5,38 C11,38 20,135 42,135 C64,135 69,40 90,40 C111,40 116,135 138,135 C160,135 169,38 185,38"
+            fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" transform="translate(-2,-3)"/>
+    </g>
+  </g>
+  <!-- Wordmark -->
+  <text x="316" y="296" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="88" font-weight="800" fill="white" letter-spacing="-2">Wisopay</text>
+  <!-- Tagline -->
+  <text x="320" y="358" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="32" font-weight="400" fill="#6ee7b7" letter-spacing="0.5">Accept payments. Grow your business.</text>
+  <!-- Divider line -->
+  <rect x="96" y="216" width="4" height="0" fill="none"/>
+  <!-- URL chip -->
+  <rect x="316" y="388" width="224" height="44" rx="22" fill="#2DC87A" fill-opacity="0.15" stroke="#2DC87A" stroke-opacity="0.4" stroke-width="1"/>
+  <text x="428" y="415" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="18" font-weight="500" fill="#6ee7b7" text-anchor="middle">wisopay.io</text>
+</svg>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Users, BarChart2, UserCheck, Shield, HelpCircle, FileText, Lock, RefreshCw } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Users, BarChart2, UserCheck, Shield, HelpCircle, FileText, Lock, RefreshCw } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { useIdleTimeout } from '../hooks/useIdleTimeout'
@@ -55,9 +55,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const sidebar = (
     <aside className="w-60 bg-[#0d1117] flex flex-col h-full">
       <div className="px-5 py-5 border-b border-white/[0.06] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-          <Zap size={16} className="text-white" />
-        </div>
+        <img src="/favicon.svg" alt="Wisopay" className="w-8 h-8 rounded-lg shadow-lg" />
         <div>
           <p className="text-sm font-bold text-white leading-tight">Wisopay</p>
           <p className="text-[11px] text-slate-500 font-medium">Merchant Portal</p>
@@ -222,9 +220,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Menu size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-              <Zap size={12} className="text-white" />
-            </div>
+            <img src="/favicon.svg" alt="Wisopay" className="w-6 h-6 rounded-md" />
             <span className="text-sm font-bold text-white">Wisopay</span>
           </div>
         </div>

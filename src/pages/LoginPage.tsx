@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { api } from '../api'
 
 export function LoginPage() {
@@ -69,9 +69,7 @@ export function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="flex items-center gap-3 justify-center mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-              <Zap size={20} className="text-white" />
-            </div>
+            <img src="/favicon.svg" alt="Wisopay" className="w-10 h-10 rounded-xl shadow-lg" />
             <div>
               <p className="text-lg font-bold text-white leading-tight">Wisopay</p>
               <p className="text-xs text-slate-400">Merchant Portal</p>
