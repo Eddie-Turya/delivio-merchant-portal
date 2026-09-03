@@ -178,7 +178,11 @@ export const api = {
   setup2fa: () => req<any>('POST', '/auth/2fa/setup', {}),
   enable2fa: (code: string) => req<any>('POST', '/auth/2fa/enable', { code }),
   disable2fa: (code: string) => req<any>('POST', '/auth/2fa/disable', { code }),
-  verify2fa: (partial_token: string, code: string) => req<any>('POST', '/auth/2fa/verify', { partial_token, code }),
+  verify2fa: async (partial_token: string, code: string) => {
+    const data = await req<any>('POST', '/auth/2fa/verify', { partial_token, code })
+    if (data.token) setToken(data.token)
+    return data
+  },
 
   // Password
   changePassword: (current_password: string, new_password: string) =>
