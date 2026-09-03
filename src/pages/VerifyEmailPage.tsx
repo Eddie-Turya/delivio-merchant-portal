@@ -51,7 +51,8 @@ export function VerifyEmailPage() {
     setError('')
     setLoading(true)
     try {
-      await api.verifyEmail(email, code)
+      const data = await api.verifyEmail(email, code)
+      localStorage.setItem('portalMerchant', JSON.stringify(data.merchant))
       navigate('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Invalid or expired code')
