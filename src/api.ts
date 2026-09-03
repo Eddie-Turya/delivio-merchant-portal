@@ -26,8 +26,26 @@ export const api = {
   isLoggedIn: () => !!getToken(),
   logout: clearToken,
 
-  register: (business_name: string, email: string, password: string, name?: string) =>
-    req<any>('POST', '/auth/register', { business_name, email, password, name }),
+  register: (fields: { business_name: string; email: string; password: string; name?: string; phone_number: string; nida_number: string; tin_document: File }) => {
+    const form = new FormData()
+    form.append('business_name', fields.business_name)
+    form.append('email', fields.email)
+    form.append('password', fields.password)
+    form.append('phone_number', fields.phone_number)
+    form.append('nida_number', fields.nida_number)
+    if (fields.name) form.append('name', fields.name)
+    form.append('tin_document', fields.tin_document)
+    const token = localStorage.getItem('portalToken')
+    return fetch(`${BASE}/auth/register`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async r => {
+      const data = await r.json()
+      if (!r.ok) throw new Error(typeof data.error === 'string' ? data.error : `HTTP ${r.status}`)
+      return data
+    })
+  },
 
   verifyEmail: async (email: string, otp: string) => {
     const data = await req<any>('POST', '/auth/verify-email', { email, otp })
