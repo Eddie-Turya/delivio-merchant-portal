@@ -15,7 +15,8 @@ export function TeamPage() {
   const [copied, setCopied] = useState(false)
   const [err, setErr] = useState('')
 
-  const currentUser = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
+  const currentUser = (() => { try { return JSON.parse(localStorage.getItem('portalUser') || '{}') } catch { return {} } })()
+  const isAdmin = members.find(m => m.id === currentUser?.id)?.role === 'admin'
 
   const load = () => {
     setLoading(true)
@@ -54,11 +55,13 @@ export function TeamPage() {
           <h1 className="text-base font-bold text-gray-900">Team</h1>
           <p className="text-xs text-gray-400 hidden sm:block">Manage who has access to this merchant portal</p>
         </div>
-        <button onClick={() => { setShowForm(!showForm); setErr('') }}
-          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex-shrink-0 min-h-[38px]">
-          {showForm ? <X size={14} /> : <Plus size={14} />}
-          {showForm ? 'Cancel' : 'Invite'}
-        </button>
+        {isAdmin && (
+          <button onClick={() => { setShowForm(!showForm); setErr('') }}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex-shrink-0 min-h-[38px]">
+            {showForm ? <X size={14} /> : <Plus size={14} />}
+            {showForm ? 'Cancel' : 'Invite'}
+          </button>
+        )}
       </div>
 
       <div className="p-4 sm:p-6 space-y-5">
@@ -152,10 +155,13 @@ export function TeamPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {m.id === currentUser?.id && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">You</span>
+                    )}
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
                       {m.role?.toUpperCase()}
                     </span>
-                    {m.id !== currentUser?.id && (
+                    {isAdmin && m.id !== currentUser?.id && (
                       <button onClick={() => remove(m.id)}
                         className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
                         <Trash2 size={13} />

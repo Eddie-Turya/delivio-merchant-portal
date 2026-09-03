@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Users, BarChart2, UserCheck, Shield, HelpCircle, FileText, Lock } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Key, Webhook, LogOut, Zap, User, BookOpen, FlaskConical, Menu, Link2, Clock, ArrowUpRight, Rows3, Users, BarChart2, UserCheck, Shield, HelpCircle, FileText, Lock, RefreshCw } from 'lucide-react'
 import { api } from '../api'
 import { useEnv } from '../context/EnvContext'
 import { useIdleTimeout } from '../hooks/useIdleTimeout'
+import { LiveApprovedModal } from './LiveApprovedModal'
 
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,17 +31,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const merchant = JSON.parse(localStorage.getItem('portalMerchant') || '{}')
   const [open, setOpen] = useState(false)
   const [idleWarning, setIdleWarning] = useState(false)
-  const { mode, setMode, isSandbox, liveEnabled } = useEnv()
+  const [countdown, setCountdown] = useState(60)
+  const { mode, setMode, isSandbox, liveEnabled, refreshStatus, statusChecking } = useEnv()
 
   const doLogout = useCallback(() => {
     api.logout()
     localStorage.removeItem('portalMerchant')
+    localStorage.removeItem('portalUser')
     navigate('/login')
   }, [navigate])
 
-  const onWarn = useCallback(() => setIdleWarning(true), [])
+  const onWarn = useCallback(() => { setIdleWarning(true); setCountdown(60) }, [])
 
   useIdleTimeout(doLogout, onWarn)
+
+  useEffect(() => {
+    if (!idleWarning) return
+    if (countdown <= 0) return
+    const t = setInterval(() => setCountdown(c => c - 1), 1000)
+    return () => clearInterval(t)
+  }, [idleWarning, countdown])
 
   const sidebar = (
     <aside className="w-60 bg-[#0d1117] flex flex-col h-full">
@@ -59,8 +69,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center bg-white/[0.06] rounded-lg p-0.5 gap-0.5">
           <button
             onClick={() => liveEnabled && setMode('live')}
-            disabled={!liveEnabled}
-            title={liveEnabled ? undefined : 'Live mode requires account approval'}
+            disabled={!liveEnabled || statusChecking}
+            title={liveEnabled ? 'Switch to live mode' : 'Live mode locked — pending admin approval'}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
               mode === 'live'
                 ? 'bg-emerald-500 text-white shadow-sm'
@@ -69,13 +79,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   : 'text-slate-600 cursor-not-allowed'
             }`}
           >
-            {liveEnabled
-              ? <span className={`w-1.5 h-1.5 rounded-full ${mode === 'live' ? 'bg-white' : 'bg-slate-500'}`} />
-              : <Lock size={10} />}
+            {statusChecking
+              ? <RefreshCw size={10} className="animate-spin" />
+              : liveEnabled
+                ? <span className={`w-1.5 h-1.5 rounded-full ${mode === 'live' ? 'bg-white' : 'bg-slate-500'}`} />
+                : <Lock size={10} />}
             Live
           </button>
           <button
             onClick={() => setMode('sandbox')}
+            disabled={statusChecking}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
               mode === 'sandbox'
                 ? 'bg-violet-500 text-white shadow-sm'
@@ -86,11 +99,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Sandbox
           </button>
         </div>
-        {isSandbox && (
-          <p className="text-[10px] text-violet-400 text-center mt-1.5">Test mode — no real money</p>
+        {isSandbox && liveEnabled && (
+          <p className="text-[10px] text-emerald-400 text-center mt-1.5">Live mode available — click to switch</p>
         )}
-        {!liveEnabled && !isSandbox && (
-          <p className="text-[10px] text-slate-500 text-center mt-1.5">Complete KYC to unlock live mode</p>
+        {isSandbox && !liveEnabled && (
+          <div className="flex items-center justify-center gap-1.5 mt-1.5">
+            <p className="text-[10px] text-slate-500">Pending KYC approval</p>
+            <button
+              onClick={() => refreshStatus()}
+              disabled={statusChecking}
+              title="Check if your account has been approved"
+              className="text-slate-600 hover:text-slate-400 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={9} className={statusChecking ? 'animate-spin' : ''} />
+            </button>
+          </div>
         )}
       </div>
 
@@ -144,6 +167,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <LiveApprovedModal />
       {/* Desktop sidebar */}
       <div className="hidden md:flex flex-col flex-shrink-0 w-60">
         {sidebar}
@@ -205,19 +229,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Idle warning banner */}
+        {/* Idle warning modal */}
         {idleWarning && (
-          <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
-            <Clock size={15} className="text-amber-400 flex-shrink-0" />
-            <p className="text-xs text-amber-300 flex-1">
-              You'll be logged out in <strong>1 minute</strong> due to inactivity.
-            </p>
-            <button
-              onClick={() => setIdleWarning(false)}
-              className="text-xs font-semibold text-amber-400 hover:text-amber-200 whitespace-nowrap"
-            >
-              Stay logged in
-            </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+              {/* Amber header */}
+              <div className="bg-gradient-to-br from-amber-400 to-orange-500 px-6 py-6 text-center">
+                <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                  <Clock size={28} className="text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Still there?</h3>
+                <p className="text-amber-100 text-sm mt-1">You've been inactive for a while</p>
+              </div>
+              {/* Body */}
+              <div className="px-6 py-5 text-center">
+                <p className="text-gray-600 text-sm mb-1">You'll be logged out automatically in</p>
+                <p className="text-4xl font-extrabold text-gray-900 tabular-nums my-3">{countdown}s</p>
+                <p className="text-xs text-gray-400 mb-6">Any activity resets the timer</p>
+                <button
+                  onClick={() => setIdleWarning(false)}
+                  className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-colors text-sm"
+                >
+                  Yes, keep me logged in
+                </button>
+                <button
+                  onClick={doLogout}
+                  className="w-full mt-2 py-2.5 text-sm text-gray-400 hover:text-gray-600 font-medium transition-colors"
+                >
+                  Log out now
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

@@ -59,6 +59,8 @@ export const api = {
   login: async (email: string, password: string) => {
     const data = await req<any>('POST', '/auth/login', { email, password })
     setToken(data.token)
+    if (data.merchant) localStorage.setItem('portalMerchant', JSON.stringify(data.merchant))
+    if (data.user) localStorage.setItem('portalUser', JSON.stringify(data.user))
     return data
   },
   me: () => req<any>('GET', '/me'),

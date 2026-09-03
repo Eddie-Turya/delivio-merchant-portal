@@ -58,14 +58,6 @@ export function DashboardPage() {
       </div>
 
       <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
-        {/* Status banner */}
-        {merchant.status === 'active' && (
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Your account is <strong>active</strong> and processing payments.
-          </div>
-        )}
-
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {loading

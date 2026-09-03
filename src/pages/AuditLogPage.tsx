@@ -3,20 +3,44 @@ import { Layout } from '../components/Layout'
 import { api } from '../api'
 import { Shield, RefreshCw } from 'lucide-react'
 
-const ACTION_COLORS: Record<string, string> = {
-  REFUND: 'bg-violet-50 text-violet-700',
-  KEY_ROTATE: 'bg-amber-50 text-amber-700',
-  WEBHOOK_CREATE: 'bg-emerald-50 text-emerald-700',
-  WEBHOOK_UPDATE: 'bg-blue-50 text-blue-700',
-  WEBHOOK_DELETE: 'bg-red-50 text-red-600',
-  TEAM_INVITE: 'bg-teal-50 text-teal-700',
-  TEAM_REMOVE: 'bg-red-50 text-red-600',
-  PROFILE_UPDATE: 'bg-gray-100 text-gray-600',
+const ACTION_META: Record<string, { cls: string; label: string }> = {
+  REFUND:               { cls: 'bg-violet-50 text-violet-700',  label: 'Refund' },
+  KEY_ROTATE:           { cls: 'bg-amber-50 text-amber-700',    label: 'Key Rotated' },
+  WEBHOOK_CREATE:       { cls: 'bg-emerald-50 text-emerald-700',label: 'Webhook Added' },
+  WEBHOOK_UPDATE:       { cls: 'bg-blue-50 text-blue-700',      label: 'Webhook Updated' },
+  WEBHOOK_DELETE:       { cls: 'bg-red-50 text-red-600',        label: 'Webhook Deleted' },
+  WEBHOOK_SECRET_ROTATE:{ cls: 'bg-amber-50 text-amber-700',    label: 'Webhook Secret' },
+  TEAM_INVITE:          { cls: 'bg-teal-50 text-teal-700',      label: 'Member Invited' },
+  TEAM_REMOVE:          { cls: 'bg-red-50 text-red-600',        label: 'Member Removed' },
+  PROFILE_UPDATE:       { cls: 'bg-gray-100 text-gray-600',     label: 'Profile Updated' },
+  'invoice.created':    { cls: 'bg-blue-50 text-blue-700',      label: 'Invoice Created' },
+  'invoice.sent':       { cls: 'bg-sky-50 text-sky-700',        label: 'Invoice Sent' },
+  'invoice.marked_paid':{ cls: 'bg-emerald-50 text-emerald-700',label: 'Invoice Paid' },
 }
 
 function ActionBadge({ action }: { action: string }) {
-  const cls = ACTION_COLORS[action] || 'bg-gray-100 text-gray-600'
-  return <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${cls}`}>{action}</span>
+  const m = ACTION_META[action] || { cls: 'bg-gray-100 text-gray-600', label: action }
+  return <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${m.cls}`}>{m.label}</span>
+}
+
+function formatDetails(action: string, details: any): string {
+  if (!details || typeof details !== 'object') return '—'
+  const d = details
+  switch (action) {
+    case 'REFUND':        return `Payment · ${d.reason || 'no reason'}`
+    case 'KEY_ROTATE':    return `Env: ${d.envName || d.envId}`
+    case 'WEBHOOK_CREATE':return d.url ? `${d.url}` : '—'
+    case 'WEBHOOK_UPDATE':return `ID: ${String(d.webhookId || '').slice(0,8)}…`
+    case 'WEBHOOK_DELETE':return `ID: ${String(d.webhookId || '').slice(0,8)}…`
+    case 'WEBHOOK_SECRET_ROTATE': return `ID: ${String(d.webhookId || '').slice(0,8)}…`
+    case 'TEAM_INVITE':   return `${d.invitedEmail} · ${d.role}`
+    case 'TEAM_REMOVE':   return `User removed`
+    case 'PROFILE_UPDATE':return Array.isArray(d.fields) ? d.fields.join(', ') : '—'
+    case 'invoice.created': return `#${d.invoice_number}`
+    case 'invoice.sent':    return `#${d.invoice_number}`
+    case 'invoice.marked_paid': return `#${d.invoice_number}`
+    default: return JSON.stringify(d).slice(0, 60)
+  }
 }
 
 export function AuditLogPage() {
@@ -78,8 +102,8 @@ export function AuditLogPage() {
                     <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3.5"><ActionBadge action={log.action} /></td>
                       <td className="px-5 py-3.5 text-xs text-gray-600">{log.user_email}</td>
-                      <td className="px-5 py-3.5 text-xs text-gray-500 max-w-xs truncate font-mono">
-                        {log.details && typeof log.details === 'object' ? JSON.stringify(log.details).slice(0, 60) : '—'}
+                      <td className="px-5 py-3.5 text-xs text-gray-500 max-w-xs truncate">
+                        {formatDetails(log.action, log.details)}
                       </td>
                       <td className="px-5 py-3.5 text-xs font-mono text-gray-400">{log.ip || '—'}</td>
                       <td className="px-5 py-3.5 text-xs text-gray-400">
