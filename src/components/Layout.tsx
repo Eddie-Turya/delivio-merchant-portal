@@ -55,7 +55,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const sidebar = (
     <aside className="w-60 bg-[#0d1117] flex flex-col h-full">
       <div className="px-5 py-5 border-b border-white/[0.06] flex items-center gap-3">
-        <img src="/logo.png" alt="Wisopay" className="w-8 h-8 rounded-lg shadow-lg" />
+        <img src="/logo.png" alt="Wisopay" className="h-8 w-auto rounded-lg shadow-lg" />
         <div>
           <p className="text-sm font-bold text-white leading-tight">Wisopay</p>
           <p className="text-[11px] text-slate-500 font-medium">Merchant Portal</p>
@@ -220,7 +220,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Menu size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Wisopay" className="w-6 h-6 rounded-md" />
+            <img src="/logo.png" alt="Wisopay" className="h-6 w-auto rounded-md" />
             <span className="text-sm font-bold text-white">Wisopay</span>
           </div>
         </div>
