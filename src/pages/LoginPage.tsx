@@ -50,7 +50,13 @@ export function LoginPage() {
       window.dispatchEvent(new CustomEvent('portalLogin'))
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || '2FA verification failed')
+      const msg = err.message || '2FA verification failed'
+      setError(msg)
+      if (msg.includes('expired')) {
+        setRequires2fa(false)
+        setPartialToken('')
+        setTotpCode('')
+      }
     } finally {
       setLoading(false)
     }
