@@ -30,6 +30,7 @@ export function LoginPage() {
       }
       localStorage.setItem('portalMerchant', JSON.stringify(data.merchant))
       localStorage.setItem('portalUser', JSON.stringify(data.user))
+      window.dispatchEvent(new CustomEvent('portalLogin'))
       navigate('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Login failed')
@@ -46,6 +47,7 @@ export function LoginPage() {
       const data = await api.verify2fa(partialToken, totpCode)
       localStorage.setItem('portalMerchant', JSON.stringify(data.merchant))
       localStorage.setItem('portalUser', JSON.stringify(data.user))
+      window.dispatchEvent(new CustomEvent('portalLogin'))
       navigate('/dashboard')
     } catch (err: any) {
       setError(err.message || '2FA verification failed')

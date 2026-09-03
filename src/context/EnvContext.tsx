@@ -51,6 +51,24 @@ export function EnvProvider({ children }: { children: ReactNode }) {
     }
   }, [merchant])
 
+  // Re-sync merchant state immediately after login (without waiting for mount re-run)
+  // LoginPage dispatches 'portalLogin' after setting localStorage — reads fresh data
+  useEffect(() => {
+    const onLogin = () => {
+      const fresh = (() => { try { return JSON.parse(localStorage.getItem('portalMerchant') || '{}') } catch { return {} } })()
+      setMerchant(fresh)
+      if (!api.isLoggedIn()) return
+      api.me().then(data => {
+        if (!data?.merchant) return
+        const updated = { ...fresh, ...data.merchant }
+        localStorage.setItem('portalMerchant', JSON.stringify(updated))
+        setMerchant(updated)
+      }).catch(() => {})
+    }
+    window.addEventListener('portalLogin', onLogin)
+    return () => window.removeEventListener('portalLogin', onLogin)
+  }, [])
+
   // Refresh on mount
   useEffect(() => { refreshStatus() }, [])
 
